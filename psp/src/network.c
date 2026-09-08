@@ -27,8 +27,10 @@ int ice_net_init(void) {
 
 int ice_wifi_connect(int profile) {
     int ret;
-
+    int state;
     ret = sceNetApctlConnect(profile);
+    sceNetApctlGetState(&state);
+    sceKernelDelayThread(1000000);
     if (ret < 0) return ret;
 
     return 0;
