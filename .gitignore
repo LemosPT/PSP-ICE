@@ -1,0 +1,11 @@
+# Build artifacts
+build/
+dist/
+*.o
+*.elf
+*.prx
+*.pbp
+*.iso
+*.log
+*.swp
+.DS_Store
