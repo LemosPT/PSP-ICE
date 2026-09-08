@@ -78,7 +78,7 @@ int main(void) {
     if (send_hello(sock, &sequence) < 0) {
         pspDebugScreenPrintf("HELLO send FAILED\n");
     } else {
-        pspDebugScreenPrintf("HELLO sent, seq=%u\n", sequence);
+        pspDebugScreenPrintf("HELLO sent, seq=%u\n", (unsigned long)sequence);
     }
 
     pspDebugScreenPrintf("\nMove the PSP controls.\n");
@@ -103,7 +103,7 @@ int main(void) {
         }
 
         pspDebugScreenSetXY(0, 8);
-        pspDebugScreenPrintf("seq: %u     \n", sequence);
+        pspDebugScreenPrintf("seq: %u     \n", (unsigned long)sequence);
         pspDebugScreenPrintf("buttons: 0x%04X\n", buttons);
         pspDebugScreenPrintf("analog:  %3d,%3d\n", pad.Lx, pad.Ly);
         pspDebugScreenPrintf("                       \n");

@@ -40,7 +40,7 @@ int ice_net_send(int sock, const char *host, uint16_t port,
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = sceNetInetInetAddr(host);
-    if (addr.sin_addr.s_addr == INADDR_NONE) return -1;
+    if (addr.sin_addr.s_addr == (uint32_t)-1) return -1;
 
     return sceNetInetSendto(sock, data, length, 0,
                             (struct sockaddr *)&addr, sizeof(addr));
@@ -48,7 +48,7 @@ int ice_net_send(int sock, const char *host, uint16_t port,
 
 int ice_net_receive(int sock, void *data, uint16_t capacity,
                     uint32_t timeout_us) {
-    struct timeval tv;
+    struct SceNetInetTimeval tv;
     fd_set readfds;
     int ret;
 
