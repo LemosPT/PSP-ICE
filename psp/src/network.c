@@ -50,6 +50,10 @@ int ice_wifi_connect(int profile) {
 
 }
 
+int ice_net_get_last_error(void) {
+    return sceNetInetGetErrno();
+}
+
 void ice_net_shutdown(void) {
     if (!net_initialized) return;
 
