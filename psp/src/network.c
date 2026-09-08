@@ -33,8 +33,10 @@ int ice_wifi_connect(int profile) {
 
     if (state == PSP_NET_APCTL_STATE_GOT_IP) {
         return 0;
-        sleep(1000);
-        return;
+        while (state != PSP_NET_APCTL_STATE_GOT_IP) {
+            sleep(1000);
+            sceNetApctlGetState(&state);
+            
     }
 
     sceKernelDelayThread(1000000);
