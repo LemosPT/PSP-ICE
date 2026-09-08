@@ -61,7 +61,7 @@ int main(void) {
     pspDebugScreenPrintf("Starting network...\n");
 
     if (ice_net_init() < 0) {
-        pspDebugScreenPrintf("Network init FAILED\n");
+        pspDebugScreenPrintf("Network init FAILED: %d\n", ice_net_get_last_error());
         sceKernelSleepThread();
         return 1;
     }
