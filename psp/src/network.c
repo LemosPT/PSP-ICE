@@ -2,7 +2,7 @@
 #include <pspnet_inet.h>
 #include <pspnet_apctl.h>
 #include <pspkernel.h>
-#include <psputility.h>
+#include <psputility_netmodules.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -17,7 +17,7 @@ int ice_net_init(void) {
 
     if (net_initialized) return 0;
 
-    /* The network modules must be loaded before using sceNet*. */
+    /* Load the PSP networking modules before using any sceNet* API. */
     ret = sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
     if (ret < 0) return ret;
 
@@ -47,20 +47,15 @@ int ice_net_init(void) {
 int ice_wifi_connect(int profile) {
     int ret;
     int state;
-    int last_state = -1;
     int attempts = 0;
 
     ret = sceNetApctlConnect(profile);
     if (ret < 0) return ret;
 
-    /* Give the PSP some time to move through SCANNING/JOINING/GETTING_IP. */
+    /* Wait for the connection to progress through the APCTL states. */
     while (attempts < 200) { /* 200 x 50 ms = 10 seconds */
         ret = sceNetApctlGetState(&state);
         if (ret < 0) return ret;
-
-        if (state != last_state) {
-            last_state = state;
-        }
 
         if (state == PSP_NET_APCTL_STATE_GOT_IP) {
             return 0;
