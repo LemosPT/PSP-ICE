@@ -63,7 +63,9 @@ int main(void) {
 
     ret = ice_net_init();
     if (ret < 0) {
-        pspDebugScreenPrintf("Network init FAILED: 0x%08X\n", ret);
+        pspDebugScreenPrintf("Network init FAILED: 0x%08X\n", (unsigned int)ret);
+        pspDebugScreenPrintf("Failed at network stage %d\n", ice_net_init_stage());
+        pspDebugScreenPrintf("1=COMMON 2=INET 3=NET 4=INET-INIT 5=APCTL\n");
         sceKernelSleepThread();
         return 1;
     }
@@ -72,7 +74,7 @@ int main(void) {
 
     ret = ice_wifi_connect(1);
     if (ret < 0) {
-        pspDebugScreenPrintf("Wi-Fi connect FAILED: 0x%08X\n", ret);
+        pspDebugScreenPrintf("Wi-Fi connect FAILED: 0x%08X\n", (unsigned int)ret);
         ice_net_shutdown();
         sceKernelSleepThread();
         return 1;
@@ -80,7 +82,7 @@ int main(void) {
 
     sock = ice_net_socket();
     if (sock < 0) {
-        pspDebugScreenPrintf("Socket creation FAILED: 0x%08X\n", sock);
+        pspDebugScreenPrintf("Socket creation FAILED: 0x%08X\n", (unsigned int)sock);
         ice_net_shutdown();
         sceKernelSleepThread();
         return 1;
@@ -89,7 +91,7 @@ int main(void) {
     pspDebugScreenPrintf("Sending HELLO...\n");
     ret = send_hello(sock, &sequence);
     if (ret < 0) {
-        pspDebugScreenPrintf("HELLO send FAILED: 0x%08X\n", ret);
+        pspDebugScreenPrintf("HELLO send FAILED: 0x%08X\n", (unsigned int)ret);
     } else {
         pspDebugScreenPrintf("HELLO sent, seq=%lu\n", (unsigned long)sequence);
     }
