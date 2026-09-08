@@ -25,6 +25,15 @@ int ice_net_init(void) {
     return 0;
 }
 
+int ice_wifi_connect(int profile) {
+    int ret;
+
+    ret = sceNetApctlConnect(profile);
+    if (ret < 0) return ret;
+
+    return 0;
+}
+
 void ice_net_shutdown(void) {
     if (!net_initialized) return;
 

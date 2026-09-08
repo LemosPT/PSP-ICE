@@ -66,6 +66,15 @@ int main(void) {
         return 1;
     }
 
+    pspDebugScreenPrintf("Network started. Connecting to Wi-Fi...\n");
+
+    if (ice_wifi_connect(1) < 0) {
+        pspDebugScreenPrintf("Wi-Fi connect FAILED\n");
+        ice_net_shutdown();
+        sceKernelSleepThread();
+        return 1;
+    }
+
     sock = ice_net_socket();
     if (sock < 0) {
         pspDebugScreenPrintf("Socket creation FAILED\n");
