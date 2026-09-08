@@ -50,6 +50,7 @@ static int send_hello(int sock, uint32_t *sequence) {
 
 int main(void) {
     int sock;
+    int ret;
     uint32_t sequence = 0;
     uint8_t packet[PACKET_SIZE];
     uint8_t payload[4];
@@ -60,16 +61,18 @@ int main(void) {
     pspDebugScreenPrintf("Gateway: %s:%d\n", gateway_host, GATEWAY_PORT);
     pspDebugScreenPrintf("Starting network...\n");
 
-    if (ice_net_init() < 0) {
-        pspDebugScreenPrintf("Network init FAILED: %d\n", ice_net_get_last_error());
+    ret = ice_net_init();
+    if (ret < 0) {
+        pspDebugScreenPrintf("Network init FAILED: 0x%08X\n", ret);
         sceKernelSleepThread();
         return 1;
     }
 
     pspDebugScreenPrintf("Network started. Connecting to Wi-Fi...\n");
 
-    if (ice_wifi_connect(1) < 0) {
-        pspDebugScreenPrintf("Wi-Fi connect FAILED\n");
+    ret = ice_wifi_connect(1);
+    if (ret < 0) {
+        pspDebugScreenPrintf("Wi-Fi connect FAILED: 0x%08X\n", ret);
         ice_net_shutdown();
         sceKernelSleepThread();
         return 1;
@@ -77,15 +80,16 @@ int main(void) {
 
     sock = ice_net_socket();
     if (sock < 0) {
-        pspDebugScreenPrintf("Socket creation FAILED\n");
+        pspDebugScreenPrintf("Socket creation FAILED: 0x%08X\n", sock);
         ice_net_shutdown();
         sceKernelSleepThread();
         return 1;
     }
 
     pspDebugScreenPrintf("Sending HELLO...\n");
-    if (send_hello(sock, &sequence) < 0) {
-        pspDebugScreenPrintf("HELLO send FAILED\n");
+    ret = send_hello(sock, &sequence);
+    if (ret < 0) {
+        pspDebugScreenPrintf("HELLO send FAILED: 0x%08X\n", ret);
     } else {
         pspDebugScreenPrintf("HELLO sent, seq=%lu\n", (unsigned long)sequence);
     }
