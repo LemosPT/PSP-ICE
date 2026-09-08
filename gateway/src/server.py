@@ -1,26 +1,18 @@
 #!/usr/bin/env python3
-"""Minimal PSP-ICE development gateway.
-
-This is intentionally a PC-only network prototype. It does not implement
-CarPlay yet; it provides the session/control foundation for the PSP link.
-"""
+"""PC-side PSP-ICE UDP gateway for protocol development."""
 
 import argparse
 import socket
-import struct
-import time
 
-MAGIC = b"ICE1"
-VERSION = 1
-HEADER = struct.Struct("!4sBBBBIH")
-CHANNEL_CONTROL = 0
-MSG_HELLO = 1
-MSG_PING = 2
-MSG_PONG = 3
-
-
-def pack_message(channel: int, msg_type: int, sequence: int, payload: bytes = b"") -> bytes:
-    return HEADER.pack(MAGIC, VERSION, channel, msg_type, 0, sequence, len(payload)) + payload
+from protocol import (
+    CHANNEL_CONTROL,
+    MSG_HELLO,
+    MSG_PING,
+    MSG_PONG,
+    ProtocolError,
+    pack_message,
+    unpack_message,
+)
 
 
 def main() -> None:
@@ -35,37 +27,54 @@ def main() -> None:
 
     sequence = 0
     print(f"PSP-ICE gateway listening on UDP {args.host}:{args.port}")
-    print("Waiting for a PSP/test client...")
+    print("Waiting for a PC/PSP test client...\n")
 
-    while True:
-        try:
-            data, addr = sock.recvfrom(2048)
-        except socket.timeout:
-            continue
-        except KeyboardInterrupt:
-            print("\nStopping.")
-            break
+    try:
+        while True:
+            try:
+                data, addr = sock.recvfrom(65535)
+            except socket.timeout:
+                continue
 
-        if len(data) < HEADER.size:
-            continue
+            try:
+                message = unpack_message(data)
+            except ProtocolError as exc:
+                print(f"RX {addr} INVALID: {exc}")
+                continue
 
-        magic, version, channel, msg_type, _flags, rx_sequence, length = HEADER.unpack_from(data)
-        payload = data[HEADER.size:]
+            print(
+                f"RX {addr} channel={message.channel} type={message.msg_type} "
+                f"seq={message.sequence} bytes={len(message.payload)}"
+            )
 
-        if magic != MAGIC or version != VERSION or length != len(payload):
-            print(f"Ignoring malformed packet from {addr}")
-            continue
+            if message.channel != CHANNEL_CONTROL:
+                continue
 
-        print(f"RX {addr} channel={channel} type={msg_type} seq={rx_sequence} bytes={length}")
+            if message.msg_type == MSG_HELLO:
+                sequence += 1
+                response = pack_message(
+                    CHANNEL_CONTROL,
+                    MSG_PONG,
+                    sequence,
+                    b"PSP-ICE/1",
+                )
+                sock.sendto(response, addr)
+                print(f"TX PONG -> {addr} payload=PSP-ICE/1")
 
-        if channel == CHANNEL_CONTROL and msg_type == MSG_HELLO:
-            sequence += 1
-            sock.sendto(pack_message(CHANNEL_CONTROL, MSG_PONG, sequence, b"PSP-ICE/1"), addr)
-            print(f"TX PONG → {addr}")
+            elif message.msg_type == MSG_PING:
+                sequence += 1
+                sock.sendto(
+                    pack_message(CHANNEL_CONTROL, MSG_PONG, sequence),
+                    addr,
+                )
+                print(f"TX PONG -> {addr}")
 
-        elif channel == CHANNEL_CONTROL and msg_type == MSG_PING:
-            sequence += 1
-            sock.sendto(pack_message(CHANNEL_CONTROL, MSG_PONG, sequence), addr)
+            elif message.msg_type == MSG_PONG:
+                print(f"PONG from {addr}")
+    except KeyboardInterrupt:
+        print("\nStopping.")
+    finally:
+        sock.close()
 
 
 if __name__ == "__main__":
