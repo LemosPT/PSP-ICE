@@ -6,11 +6,15 @@ import socket
 
 from protocol import (
     CHANNEL_CONTROL,
+    CHANNEL_INPUT,
     MSG_HELLO,
+    MSG_INPUT_STATE,
     MSG_PING,
     MSG_PONG,
     ProtocolError,
+    format_buttons,
     pack_message,
+    unpack_input_state,
     unpack_message,
 )
 
@@ -47,30 +51,35 @@ def main() -> None:
                 f"seq={message.sequence} bytes={len(message.payload)}"
             )
 
-            if message.channel != CHANNEL_CONTROL:
-                continue
+            if message.channel == CHANNEL_CONTROL:
+                if message.msg_type == MSG_HELLO:
+                    sequence += 1
+                    response = pack_message(
+                        CHANNEL_CONTROL, MSG_PONG, sequence, b"PSP-ICE/1"
+                    )
+                    sock.sendto(response, addr)
+                    print(f"TX PONG -> {addr} payload=PSP-ICE/1")
 
-            if message.msg_type == MSG_HELLO:
-                sequence += 1
-                response = pack_message(
-                    CHANNEL_CONTROL,
-                    MSG_PONG,
-                    sequence,
-                    b"PSP-ICE/1",
+                elif message.msg_type == MSG_PING:
+                    sequence += 1
+                    sock.sendto(
+                        pack_message(CHANNEL_CONTROL, MSG_PONG, sequence), addr
+                    )
+                    print(f"TX PONG -> {addr}")
+
+                elif message.msg_type == MSG_PONG:
+                    print(f"PONG from {addr}")
+
+            elif message.channel == CHANNEL_INPUT and message.msg_type == MSG_INPUT_STATE:
+                try:
+                    buttons, analog_x, analog_y = unpack_input_state(message.payload)
+                except ProtocolError as exc:
+                    print(f"INPUT ERROR: {exc}")
+                    continue
+                print(
+                    f"INPUT seq={message.sequence} buttons={format_buttons(buttons)} "
+                    f"analog=({analog_x},{analog_y})"
                 )
-                sock.sendto(response, addr)
-                print(f"TX PONG -> {addr} payload=PSP-ICE/1")
-
-            elif message.msg_type == MSG_PING:
-                sequence += 1
-                sock.sendto(
-                    pack_message(CHANNEL_CONTROL, MSG_PONG, sequence),
-                    addr,
-                )
-                print(f"TX PONG -> {addr}")
-
-            elif message.msg_type == MSG_PONG:
-                print(f"PONG from {addr}")
     except KeyboardInterrupt:
         print("\nStopping.")
     finally:
