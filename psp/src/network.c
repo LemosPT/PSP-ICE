@@ -45,7 +45,7 @@ int ice_wifi_connect(int profile) {
         return -1;
     }
 
-    ret = sceNetApctlConnect();
+    ret = sceNetApctlConnect(profile);
     if (ret < 0) return ret;
 
 }
