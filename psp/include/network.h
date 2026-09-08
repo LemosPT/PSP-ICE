@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 int ice_net_init(void);
+int ice_wifi_connect(int profile);
 void ice_net_shutdown(void);
 int ice_net_socket(void);
 int ice_net_send(int sock, const char *host, uint16_t port,

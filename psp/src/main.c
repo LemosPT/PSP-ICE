@@ -68,7 +68,7 @@ int main(void) {
 
     pspDebugScreenPrintf("Network started. Connecting to Wi-Fi...\n");
 
-    if (ice_net_connect(1) < 0) {
+    if (ice_wifi_connect(1) < 0) {
         pspDebugScreenPrintf("Wi-Fi connect FAILED\n");
         ice_net_shutdown();
         sceKernelSleepThread();
