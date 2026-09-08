@@ -19,7 +19,7 @@ int ice_net_init(void) {
     if (ret < 0) return ret;
     ret = sceNetInetInit();
     if (ret < 0) return ret;
-    ret = sceNetApctlInit(0x1800, 48)
+    ret = sceNetApctlInit(0x1800, 48);
     if (ret < 0) return ret;
     net_initialized = 1;
     return 0;
