@@ -17,7 +17,7 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 #define INPUT_INTERVAL_US 33333
 
 /* Change this to the PC running the PSP-ICE gateway. */
-static const char *gateway_host = "192.168.1.100";
+static const char *gateway_host = "192.168.1.143";
 
 static int build_packet(uint8_t *out, uint8_t channel, uint8_t type,
                         uint32_t sequence, const uint8_t *payload,
