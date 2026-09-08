@@ -3,6 +3,7 @@
 #include <pspnet_apctl.h>
 #include <pspkernel.h>
 #include <psputility_netmodules.h>
+#include <pspkernel.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,30 +12,44 @@
 #include "network.h"
 
 static int net_initialized;
+static int net_stage_error;
 
 int ice_net_init(void) {
     int ret;
+
+    net_stage_error = 0;
 
     if (net_initialized) return 0;
 
     /* Load the PSP networking modules before using any sceNet* API. */
     ret = sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
-    if (ret < 0) return ret;
+    if (ret < 0) {
+        net_stage_error = 1;
+        return ret;
+    }
 
     ret = sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
-    if (ret < 0) return ret;
+    if (ret < 0) {
+        net_stage_error = 2;
+        return ret;
+    }
 
     ret = sceNetInit(128 * 1024, 42, 4 * 1024, 42, 4 * 1024);
-    if (ret < 0) return ret;
+    if (ret < 0) {
+        net_stage_error = 3;
+        return ret;
+    }
 
     ret = sceNetInetInit();
     if (ret < 0) {
+        net_stage_error = 4;
         sceNetTerm();
         return ret;
     }
 
     ret = sceNetApctlInit(0x8000, 48);
     if (ret < 0) {
+        net_stage_error = 5;
         sceNetInetTerm();
         sceNetTerm();
         return ret;
@@ -42,6 +57,10 @@ int ice_net_init(void) {
 
     net_initialized = 1;
     return 0;
+}
+
+int ice_net_init_stage(void) {
+    return net_stage_error;
 }
 
 int ice_wifi_connect(int profile) {
