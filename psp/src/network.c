@@ -1,5 +1,6 @@
 #include <pspnet.h>
 #include <pspnet_inet.h>
+#include <pspnet_apctl.h>
 #include <pspkernel.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -18,12 +19,16 @@ int ice_net_init(void) {
     if (ret < 0) return ret;
     ret = sceNetInetInit();
     if (ret < 0) return ret;
+    ret = sceNetApctlInit(0x1800, 48)
+    if (ret < 0) return ret;
     net_initialized = 1;
     return 0;
 }
 
 void ice_net_shutdown(void) {
     if (!net_initialized) return;
+
+    sceNetApctlTerm();
     sceNetInetTerm();
     sceNetTerm();
     net_initialized = 0;
