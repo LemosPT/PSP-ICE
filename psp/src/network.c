@@ -2,6 +2,7 @@
 #include <pspnet_inet.h>
 #include <pspnet_apctl.h>
 #include <pspkernel.h>
+#include <psputility.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,14 +14,32 @@ static int net_initialized;
 
 int ice_net_init(void) {
     int ret;
+
     if (net_initialized) return 0;
 
-    ret = sceNetInit(128 * 1024, 42, 0, 42, 0);
+    /* The network modules must be loaded before using sceNet*. */
+    ret = sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
     if (ret < 0) return ret;
+
+    ret = sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
+    if (ret < 0) return ret;
+
+    ret = sceNetInit(128 * 1024, 42, 4 * 1024, 42, 4 * 1024);
+    if (ret < 0) return ret;
+
     ret = sceNetInetInit();
-    if (ret < 0) return ret;
-    ret = sceNetApctlInit(0x1800, 48);
-    if (ret < 0) return ret;
+    if (ret < 0) {
+        sceNetTerm();
+        return ret;
+    }
+
+    ret = sceNetApctlInit(0x8000, 48);
+    if (ret < 0) {
+        sceNetInetTerm();
+        sceNetTerm();
+        return ret;
+    }
+
     net_initialized = 1;
     return 0;
 }
@@ -28,30 +47,34 @@ int ice_net_init(void) {
 int ice_wifi_connect(int profile) {
     int ret;
     int state;
-    ret = sceNetApctlConnect(profile);
-    sceNetApctlGetState(&state);
-
-    if (state == PSP_NET_APCTL_STATE_GOT_IP) {
-        return 0;
-    while (state != PSP_NET_APCTL_STATE_GOT_IP) {
-        sceKernelDelayThread(1000000);
-        sceNetApctlGetState(&state);
-    
-        return -1;
-    }
-
-    ret = sceNetApctlGetInfo(PSP_NET_APCTL_INFO_IP_ADDRESS, NULL, 0);
-    if (ret < 0){
-        return -1;
-    }
+    int last_state = -1;
+    int attempts = 0;
 
     ret = sceNetApctlConnect(profile);
     if (ret < 0) return ret;
 
-}
+    /* Give the PSP some time to move through SCANNING/JOINING/GETTING_IP. */
+    while (attempts < 200) { /* 200 x 50 ms = 10 seconds */
+        ret = sceNetApctlGetState(&state);
+        if (ret < 0) return ret;
 
-int ice_net_get_last_error(void) {
-    return sceNetInetGetErrno();
+        if (state != last_state) {
+            last_state = state;
+        }
+
+        if (state == PSP_NET_APCTL_STATE_GOT_IP) {
+            return 0;
+        }
+
+        if (state == PSP_NET_APCTL_STATE_DISCONNECTED) {
+            return -1;
+        }
+
+        sceKernelDelayThread(50 * 1000);
+        attempts++;
+    }
+
+    return -1;
 }
 
 void ice_net_shutdown(void) {
