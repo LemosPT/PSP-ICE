@@ -3,7 +3,6 @@
 #include <pspnet_apctl.h>
 #include <pspkernel.h>
 #include <psputility_netmodules.h>
-#include <pspkernel.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -34,6 +33,8 @@ int ice_net_init(void) {
         return ret;
     }
 
+    /* These are the same initialization values used by the PSPSDK
+       networking sample. */
     ret = sceNetInit(128 * 1024, 42, 4 * 1024, 42, 4 * 1024);
     if (ret < 0) {
         net_stage_error = 3;
