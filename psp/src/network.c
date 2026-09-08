@@ -30,10 +30,14 @@ int ice_wifi_connect(int profile) {
     int state;
     ret = sceNetApctlConnect(profile);
     sceNetApctlGetState(&state);
-    sceKernelDelayThread(1000000);
-    if (ret < 0) return ret;
 
-    return 0;
+    if (state == PSP_NET_APCTL_STATE_GOT_IP) {
+        return 0;
+    }
+
+    sceKernelDelayThread(1000000);
+
+    return -1;
 }
 
 void ice_net_shutdown(void) {
