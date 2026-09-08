@@ -2,9 +2,9 @@ TARGET = psp-ice
 OBJS = src/main.o src/network.o src/input.o
 
 CFLAGS = -O2 -G0 -Wall -Iinclude
-# build.mak supplies the normal user-mode PSP libraries. Only add the
-# networking library that is not part of the default list.
-LIBS = -lpspnet_inet
+# Keep PSP networking libraries after the SDK defaults so import stubs
+# are emitted in the order expected by psp-fixup-imports.
+LIBS = -lpspnet -lpspnet_apctl -lpspnet_inet
 
 EXTRA_TARGETS = EBOOT.PBP
 PSP_EBOOT_TITLE = PSP-ICE
