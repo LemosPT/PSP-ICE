@@ -9,7 +9,7 @@ iPhone → CarPlay gateway → PSP-ICE gateway → Wi-Fi → PSP
                                       ↓
                                      AUX
                                       ↓
-                              Mercedes stereo
+                                  car stereo
 ```
 
 The PSP is intended to act as the in-car display/input terminal. A Linux gateway handles the heavy networking and CarPlay integration.
