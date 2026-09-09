@@ -29,7 +29,7 @@ The PSP is intended to act as the in-car display/input terminal. A Linux gateway
 - [ ] PSP input transport
 - [ ] Audio output
 - [ ] CarPlay gateway integration
-- [ ] Mercedes integration
+- [ ] Car integration
 - [ ] Automotive enclosure / mounting
 
 ## Repository layout
