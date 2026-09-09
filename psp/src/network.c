@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <psputility_netconf.h>
 
 #include "network.h"
 
@@ -63,6 +64,7 @@ int ice_net_init(void) {
 int ice_net_init_stage(void) {
     return net_stage_error;
 }
+
 
 int ice_wifi_connect(int profile) {
     int ret;
@@ -133,3 +135,28 @@ int ice_net_receive(int sock, void *data, uint16_t capacity,
     if (ret <= 0) return ret;
     return sceNetInetRecv(sock, data, capacity, 0);
 }
+
+//MAKE THE PSP OPEN THE MENU OF WI-FI'S INSTEAD OF OPENING A RANDOM PROFILE AND PRAYING
+
+//int profile = 0;
+
+//SceUtilityNetconfData netconf;
+//memset(&netconf, 0, sizeof(netconf));
+//netconf.size = sizeof(netconf);
+
+//// Start the PSP network configuration dialog
+//sceUtilityNetconfInitStart(&netconf);
+
+//while (1) {
+//    int status = sceUtilityNetconfGetStatus();
+//    if (status == 2) break; // finished
+//    if (status < 0) break; // error
+//    sceKernelDelayThread(10000);
+//}
+
+//// Then shutdown the dialog
+//sceUtilityNetconfShutdownStart();
+
+//// After the user selected a profile, use that profile index
+//// e.g. profile = selected_profile_index;
+//ret = sceNetApctlConnect(profile);

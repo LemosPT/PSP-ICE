@@ -74,7 +74,7 @@ int main(void) {
 
     ret = ice_wifi_connect(1);
     if (ret < 0) {
-        pspDebugScreenPrintf("Wi-Fi connect FAILED: 0x%08X\n", (unsigned int)ret);
+        pspDebugScreenPrintf("Wi-Fi connection FAILED: 0x%08X\n", (unsigned int)ret);
         ice_net_shutdown();
         sceKernelSleepThread();
         return 1;
