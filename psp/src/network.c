@@ -66,10 +66,10 @@ int ice_net_init_stage(void) {
 }
 
 
-int ice_wifi_connect(int profile) {
-    int profile = 0; // Default to the first profile
+int ice_wifi_connect(int profile = 0) {
+    // int profile = 0; // Default to the first profile
 
-    SceUtilityNetconfData netconf;
+    pspUtilityNetconfData netconf;
     memset(&netconf, 0, sizeof(netconf));
     netconf.size = sizeof(netconf);
 
