@@ -1,5 +1,6 @@
 #include <pspctrl.h>
 #include <pspdebug.h>
+#include <pspdisplay.h>
 #include <pspkernel.h>
 #include <psputility_sysparam.h>
 #include <stdio.h>
@@ -18,6 +19,28 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 
 /* Change this to the PC running the PSP-ICE gateway. */
 static const char *gateway_host = "192.168.1.143";
+
+static int exit_callback(int arg1, int arg2, void *common) {
+    sceKernelExitGame();
+    return 0;
+}
+
+static int callback_thread(SceSize args, void *argp) {
+    int callback;
+
+    callback = sceKernelCreateCallback("Exit Callback", exit_callback, NULL);
+    if (callback >= 0) sceKernelRegisterExitCallback(callback);
+    sceKernelSleepThreadCB();
+    return 0;
+}
+
+static void setup_callbacks(void) {
+    SceUID thread;
+
+    thread = sceKernelCreateThread("update_thread", callback_thread,
+                                   0x11, 0xFA0, PSP_THREAD_ATTR_USER, NULL);
+    if (thread >= 0) sceKernelStartThread(thread, 0, NULL);
+}
 
 static int build_packet(uint8_t *out, uint8_t channel, uint8_t type,
                         uint32_t sequence, const uint8_t *payload,
@@ -56,6 +79,7 @@ int main(void) {
     uint8_t payload[4];
     SceCtrlData pad;
 
+    setup_callbacks();
     pspDebugScreenInit();
     pspDebugScreenPrintf("PSP-ICE PSP input test\n\n");
     pspDebugScreenPrintf("Gateway: %s:%d\n", gateway_host, GATEWAY_PORT);
@@ -80,6 +104,7 @@ int main(void) {
         return 1;
     }
 
+    pspDebugScreenInit();
     sock = ice_net_socket();
     if (sock < 0) {
         pspDebugScreenPrintf("Socket creation FAILED: 0x%08X\n", (unsigned int)sock);

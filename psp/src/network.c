@@ -2,6 +2,9 @@
 #include <pspnet_inet.h>
 #include <pspnet_apctl.h>
 #include <pspkernel.h>
+#include <pspdisplay.h>
+#include <pspgu.h>
+#include <psputility.h>
 #include <psputility_netmodules.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -13,6 +16,42 @@
 
 static int net_initialized;
 static int net_stage_error;
+
+#define GU_LIST_SIZE 262144
+#define GU_BUFFER_WIDTH 512
+#define GU_SCREEN_WIDTH 480
+#define GU_SCREEN_HEIGHT 272
+#define GU_FRAME_SIZE (GU_BUFFER_WIDTH * GU_SCREEN_HEIGHT * 4)
+
+static unsigned int __attribute__((aligned(16))) gu_list[GU_LIST_SIZE];
+
+static void ice_gui_init(void) {
+    sceGuInit();
+    sceGuStart(GU_DIRECT, gu_list);
+    sceGuDrawBuffer(GU_PSM_8888, (void *)0, GU_BUFFER_WIDTH);
+    sceGuDispBuffer(GU_SCREEN_WIDTH, GU_SCREEN_HEIGHT,
+                    (void *)GU_FRAME_SIZE, GU_BUFFER_WIDTH);
+    sceGuDepthBuffer((void *)(GU_FRAME_SIZE * 2), GU_BUFFER_WIDTH);
+    sceGuOffset(2048 - (GU_SCREEN_WIDTH / 2),
+                2048 - (GU_SCREEN_HEIGHT / 2));
+    sceGuViewport(2048, 2048, GU_SCREEN_WIDTH, GU_SCREEN_HEIGHT);
+    sceGuDepthRange(0xc350, 0x2710);
+    sceGuScissor(0, 0, GU_SCREEN_WIDTH, GU_SCREEN_HEIGHT);
+    sceGuEnable(GU_SCISSOR_TEST);
+    sceGuFinish();
+    sceGuSync(GU_SYNC_FINISH, GU_SYNC_WHAT_DONE);
+    sceDisplayWaitVblankStart();
+    sceGuDisplay(GU_TRUE);
+}
+
+static void ice_gui_frame(void) {
+    sceGuStart(GU_DIRECT, gu_list);
+    sceGuClearColor(0);
+    sceGuClearDepth(0);
+    sceGuClear(GU_COLOR_BUFFER_BIT | GU_DEPTH_BUFFER_BIT);
+    sceGuFinish();
+    sceGuSync(GU_SYNC_FINISH, GU_SYNC_WHAT_DONE);
+}
 
 int ice_net_init(void) {
     int ret;
@@ -67,11 +106,12 @@ int ice_net_init_stage(void) {
 
 
 int ice_wifi_connect(int profile) {
-    
-    // int profile = 0; // Default to the first profile
     int ret;
     int state;
     int attempts = 0;
+    int status;
+
+    (void)profile;
 
     pspUtilityNetconfData data;
 
@@ -89,24 +129,29 @@ int ice_wifi_connect(int profile) {
 	memset(&adhocparam, 0, sizeof(adhocparam));
 	data.adhocparam = &adhocparam;
 
-    // Start the PSP network configuration dialog
-    sceUtilityNetconfInitStart(&netconf);
+    ice_gui_init();
+
+    ret = sceUtilityNetconfInitStart(&data);
+    if (ret < 0) return ret;
 
     while (1) {
-        int status = sceUtilityNetconfGetStatus();
-        if (status == 2) break; // finished
-        if (status < 0) return status; // error
-        sceKernelDelayThread(10000);
+        ice_gui_frame();
+        status = sceUtilityNetconfGetStatus();
+        if (status < 0) return status;
+
+        if (status == PSP_UTILITY_DIALOG_VISIBLE) {
+            ret = sceUtilityNetconfUpdate(1);
+            if (ret < 0) return ret;
+        } else if (status == PSP_UTILITY_DIALOG_QUIT) {
+            ret = sceUtilityNetconfShutdownStart();
+            if (ret < 0) return ret;
+        } else if (status == PSP_UTILITY_DIALOG_FINISHED) {
+            break;
+        }
+
+        sceDisplayWaitVblankStart();
+        sceGuSwapBuffers();
     }
-
-    // Then shutdown the dialog
-    sceUtilityNetconfShutdownStart();
-
-    // After the user selected a profile, use that profile index
-    // profile = selected_profile_index;
-
-    ret = sceNetApctlConnect(profile);
-    if (ret < 0) return ret;
 
     /* Wait for the connection to progress through the APCTL states. */
     while (attempts < 200) { /* 200 x 50 ms = 10 seconds */
