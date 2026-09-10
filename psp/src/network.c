@@ -67,9 +67,27 @@ int ice_net_init_stage(void) {
 
 
 int ice_wifi_connect(int profile) {
-    int ret;
-    int state;
-    int attempts = 0;
+    int profile = 0; // Default to the first profile
+
+    SceUtilityNetconfData netconf;
+    memset(&netconf, 0, sizeof(netconf));
+    netconf.size = sizeof(netconf);
+
+    // Start the PSP network configuration dialog
+    sceUtilityNetconfInitStart(&netconf);
+
+    While (1) {
+        int status = sceUtilityNetconfGetStatus();
+        if (status == 2) break; // finished
+        if (status < 0) return status; // error
+        sceKernelDelayThread(10000);
+    }
+
+    // Then shutdown the dialog
+    sceUtilityNetconfShutdownStart();
+
+    // After the user selected a profile, use that profile index
+    // profile = selected_profile_index;
 
     ret = sceNetApctlConnect(profile);
     if (ret < 0) return ret;
