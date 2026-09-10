@@ -17,7 +17,7 @@ The PSP is intended to act as the in-car display/input terminal. A Linux gateway
 ## Target hardware
 
 - Sony PSP-2004
-- PSP custom firmware / ARK-4
+- PSP custom firmware / ARK-5
 - Linux gateway (development initially on PC)
 - Wi-Fi
 - Car AUX input
@@ -25,12 +25,12 @@ The PSP is intended to act as the in-car display/input terminal. A Linux gateway
 ## Project status
 
 - [✔️] PSP ↔ gateway networking
-- [ ] PSP video receiver
-- [ ] PSP input transport
-- [ ] Audio output
-- [ ] CarPlay gateway integration
-- [ ] Car integration
-- [ ] Automotive enclosure / mounting
+- [  ] PSP video receiver
+- [  ] PSP input transport
+- [  ] Audio output
+- [  ] CarPlay gateway integration
+- [  ] Car integration
+- [  ] Automotive enclosure / mounting
 
 ## Repository layout
 
