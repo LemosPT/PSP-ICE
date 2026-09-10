@@ -1,7 +1,7 @@
 TARGET = psp-ice
 OBJS = src/main.o src/network.o src/input.o
 
-CFLAGS = -02 -G0 -Wall -Iinclude
+CFLAGS = -O2 -G0 -Wall -Iinclude
 LIBS = -lpspdebug -lpspdisplay -lpspge -lpspctrl -lpspnet -lpspnet_inet -lpspnet_apctl
 #LIBS = -lpspnet_inet -lpspnet -lpspctrl -lpspdebug
 
