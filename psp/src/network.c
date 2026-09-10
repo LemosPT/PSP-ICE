@@ -67,15 +67,27 @@ int ice_net_init_stage(void) {
 
 
 int ice_wifi_connect(int profile) {
+    
     // int profile = 0; // Default to the first profile
-
     int ret;
     int state;
     int attempts = 0;
 
-    SceUtilityNetconfData netconf;
-    memset(&netconf, 0, sizeof(netconf));
-    netconf.size = sizeof(netconf);
+    pspUtilityNetconfData data;
+
+	memset(&data, 0, sizeof(data));
+	data.base.size = sizeof(data);
+	data.base.language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
+	data.base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
+	data.base.graphicsThread = 17;
+	data.base.accessThread = 19;
+	data.base.fontThread = 18;
+	data.base.soundThread = 16;
+	data.action = PSP_NETCONF_ACTION_CONNECTAP;
+	
+	struct pspUtilityNetconfAdhoc adhocparam;
+	memset(&adhocparam, 0, sizeof(adhocparam));
+	data.adhocparam = &adhocparam;
 
     // Start the PSP network configuration dialog
     sceUtilityNetconfInitStart(&netconf);
