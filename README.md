@@ -24,7 +24,7 @@ The PSP is intended to act as the in-car display/input terminal. A Linux gateway
 
 ## Project status
 
-- [ ] PSP ↔ gateway networking
+- [✔️] PSP ↔ gateway networking
 - [ ] PSP video receiver
 - [ ] PSP input transport
 - [ ] Audio output
