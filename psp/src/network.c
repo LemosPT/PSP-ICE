@@ -69,14 +69,14 @@ int ice_net_init_stage(void) {
 int ice_wifi_connect(int profile) {
     // int profile = 0; // Default to the first profile
 
-    pspUtilityNetconfData netconf;
+    SceUtilityNetconfData netconf;
     memset(&netconf, 0, sizeof(netconf));
     netconf.size = sizeof(netconf);
 
     // Start the PSP network configuration dialog
     sceUtilityNetconfInitStart(&netconf);
 
-    While (1) {
+    while (1) {
         int status = sceUtilityNetconfGetStatus();
         if (status == 2) break; // finished
         if (status < 0) return status; // error
