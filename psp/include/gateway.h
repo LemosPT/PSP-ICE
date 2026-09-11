@@ -2,6 +2,8 @@
 #define PSP_ICE_GATEWAY_H
 
 #include <stdint.h>
+#include <stdbool.h>
+#include <stdio.h>
 
 void gateway_init(void);
 static void gateway_reset_reassembly(void);
