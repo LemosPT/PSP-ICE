@@ -19,7 +19,6 @@ static void gateway_swap_framebuffers(gateway_framebuffer_t *fb);
 static gateway_video_status_t gateway_handle_udp_video_packet(gateway_framebuffer_t *fb,
                                                              const uint8_t *packet,
                                                              size_t packet_len);
-
 int gateway_example_usage(void);
 
 
