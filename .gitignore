@@ -9,3 +9,4 @@ dist/
 *.log
 *.swp
 .DS_Store
+.vscode/
