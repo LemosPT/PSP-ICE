@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "gateway.h"
+
 #define UDP_PORT 39000u
 #define VIDEO_FRAME 20u
 

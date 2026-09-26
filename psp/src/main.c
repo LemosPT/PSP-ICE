@@ -18,8 +18,9 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 #define PACKET_SIZE 64
 #define INPUT_INTERVAL_US 33333
 
-/* Change this to the PC running the PSP-ICE gateway. */
-static const char *gateway_host = "192.168.1.143";
+/* UDP broadcast lets the gateway on the DHCP-assigned local network receive
+ * packets without requiring its address to be hard-coded on the PSP. */
+static const char *gateway_host = "255.255.255.255";
 
 static int exit_callback(int arg1, int arg2, void *common) {
     sceKernelExitGame();
