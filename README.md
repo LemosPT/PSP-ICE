@@ -44,3 +44,7 @@ The PSP is intended to act as the in-car display/input terminal. A Linux gateway
 ## Status
 
 Early development / architecture phase.
+
+### For more questions or updates about this project, you can speak with the contribuitors in the Discord server!
+
+[PSP-ICE | Official Community ❄️](https://discord.gg/BaQJ3Zvm2V)
