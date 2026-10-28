@@ -61,3 +61,9 @@ Then launch the game from the PSP home screen.
 - Make sure your project contains a valid `Makefile` and PSP-compatible source structure.
 
 This is the standard workflow for building a PSP homebrew project using the project Makefile.
+
+## Further Questions
+
+If, you have any questions or are interested in seeing how this project will evolve into something bigger, check our Discord Server!
+
+[PSP-ICE | Official Community ❄️](https://discord.gg/BaQJ3Zvm2V)
