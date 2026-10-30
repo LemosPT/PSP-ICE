@@ -20,13 +20,13 @@
 
 #pragma pack(push, 1)
 typedef struct {
-    uint8_t type;
-    uint8_t version;
-    uint16_t frame_id;
+    uint32_t frame_id;
     uint16_t fragment_id;
     uint16_t fragment_count;
-    uint32_t frame_size;
-    uint16_t flags;
+    uint16_t Width;
+    uint16_t Height;
+    uint8_t Format;
+    uint8_t Reserved;
 } video_frame_header_t;
 #pragma pack(pop)
 
