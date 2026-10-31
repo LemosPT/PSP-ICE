@@ -95,7 +95,7 @@ Early development / architecture phase.
 - [ ] PSP input transport to iPhone app
 - [ ] iPhone companion app and 480×272 UI renderer
 - [ ] Spotify integration
-- [ ] iPhone-to-car AUX audio setup documentation/testing
+- [ ] PSP-to-car AUX audio setup documentation/testing
 - [ ] Reconnect and session management
 - [ ] Car installation / mounting
 
