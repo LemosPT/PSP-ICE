@@ -6,10 +6,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "audio.h"
 #include "input.h"
 #include "network.h"
 #include "protocol.h"
-#include "gateway.h"
 
 PSP_MODULE_INFO("PSP-ICE", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
@@ -18,8 +18,9 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
 #define PACKET_SIZE 64
 #define INPUT_INTERVAL_US 33333
 
-/* Change this to the PC running the PSP-ICE gateway. */
-static const char *gateway_host = "192.168.1.143";
+/* UDP broadcast lets the gateway on the DHCP-assigned local network receive
+ * packets without requiring its address to be hard-coded on the PSP. */
+static const char *gateway_host = "255.255.255.255";
 
 static int exit_callback(int arg1, int arg2, void *common) {
     sceKernelExitGame();
@@ -77,6 +78,7 @@ int main(void) {
     int ret;
     uint32_t sequence = 0;
     uint8_t packet[PACKET_SIZE];
+    uint8_t audio_packet[1200];
     uint8_t payload[4];
     SceCtrlData pad;
 
@@ -85,6 +87,7 @@ int main(void) {
     pspDebugScreenPrintf("PSP-ICE PSP input test\n\n");
     pspDebugScreenPrintf("Gateway: %s:%d\n", gateway_host, GATEWAY_PORT);
     pspDebugScreenPrintf("Starting network...\n");
+
 
     ret = ice_net_init();
     if (ret < 0) {
@@ -114,6 +117,22 @@ int main(void) {
         return 1;
     }
 
+    ret = ice_net_bind(sock, GATEWAY_PORT);
+    if (ret < 0) {
+        pspDebugScreenPrintf("UDP bind FAILED: 0x%08X\n", (unsigned int)ret);
+        ice_net_shutdown();
+        sceKernelSleepThread();
+        return 1;
+    }
+
+    ret = ice_audio_init();
+    if (ret < 0) {
+        pspDebugScreenPrintf("Audio init FAILED: 0x%08X\n", (unsigned int)ret);
+        ice_net_shutdown();
+        sceKernelSleepThread();
+        return 1;
+    }
+
     pspDebugScreenPrintf("Sending HELLO...\n");
     ret = send_hello(sock, &sequence);
     if (ret < 0) {
@@ -122,8 +141,8 @@ int main(void) {
         pspDebugScreenPrintf("HELLO sent, seq=%lu\n", (unsigned long)sequence);
     }
 
-    pspDebugScreenPrintf("\nMove the PSP controls.\n");
-    pspDebugScreenPrintf("Gateway should print INPUT packets.\n\n");
+    pspDebugScreenPrintf("\nAudio receiver ready on UDP %d.\n", GATEWAY_PORT);
+    pspDebugScreenPrintf("Move controls; stream PCM to PSP.\n\n");
 
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
@@ -131,6 +150,30 @@ int main(void) {
     while (1) {
         int len;
         uint16_t buttons;
+        int received;
+
+        /* Drain queued audio datagrams before the 30 Hz input update.
+         * Audio packets arrive about every 5.8 ms, so reading only one
+         * packet per controller tick would lose most of the stream. */
+        {
+            int packets_read = 0;
+            do {
+                received = ice_net_receive(sock, audio_packet,
+                                           sizeof(audio_packet), 0);
+                if (received >= 14 &&
+                    memcmp(audio_packet, PSP_ICE_MAGIC, 4) == 0 &&
+                    audio_packet[4] == PSP_ICE_VERSION &&
+                    audio_packet[5] == PSP_ICE_CHANNEL_AUDIO &&
+                    audio_packet[6] == PSP_ICE_MSG_AUDIO_DATA) {
+                    unsigned int payload_len =
+                        ((unsigned int)audio_packet[12] << 8) | audio_packet[13];
+                    if (payload_len == 1024 && received == 14 + payload_len) {
+                        ice_audio_queue(audio_packet + 14, payload_len);
+                    }
+                }
+                packets_read++;
+            } while (received > 0 && packets_read < 8);
+        }
 
         sceCtrlReadBufferPositive(&pad, 1);
         buttons = ice_buttons_from_psp(pad.Buttons);

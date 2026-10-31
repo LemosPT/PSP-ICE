@@ -16,6 +16,7 @@
 #define PSP_ICE_MSG_PONG 3
 #define PSP_ICE_MSG_INPUT_STATE 10
 #define PSP_ICE_MSG_VIDEO_FRAME 20
+#define PSP_ICE_MSG_AUDIO_DATA 30
 
 /* Network byte order. Total header size: 14 bytes. */
 typedef struct {
