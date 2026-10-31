@@ -126,7 +126,33 @@ void ice_audio_shutdown(void) {
 
 int ice_audio_test_tone(void) {
     short buffer[512 * 2];
-    unsigned int i;
-    (void)i;
-    return -1; /* Diagnostic implementation is retained in project history. */
+    float phase = 0.0f;
+    const float phase_step = (2.0f * 3.14159265f * 440.0f) / AUDIO_SAMPLE_RATE;
+    int channel;
+    int i;
+    int ret;
+
+    channel = sceAudioChReserve(
+        PSP_AUDIO_NEXT_CHANNEL, 512, PSP_AUDIO_FORMAT_STEREO
+    );
+    if (channel < 0) return channel;
+
+    while (1) {
+        for (i = 0; i < 512; i++) {
+            short sample = (short)(sinf(phase) * 8000.0f);
+            buffer[i * 2] = sample;
+            buffer[i * 2 + 1] = sample;
+            phase += phase_step;
+            if (phase >= 2.0f * 3.14159265f) phase -= 2.0f * 3.14159265f;
+        }
+
+        ret = sceAudioOutputPannedBlocking(channel, 0x4000, 0x4000, buffer);
+        if (ret < 0) {
+            sceAudioChRelease(channel);
+            return ret;
+        }
+    }
+
+    sceAudioChRelease(channel);
+    return 0;
 }
