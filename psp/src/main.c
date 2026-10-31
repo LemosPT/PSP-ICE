@@ -152,17 +152,27 @@ int main(void) {
         uint16_t buttons;
         int received;
 
-        received = ice_net_receive(sock, audio_packet, sizeof(audio_packet), 1000);
-        if (received >= 14 &&
-            memcmp(audio_packet, PSP_ICE_MAGIC, 4) == 0 &&
-            audio_packet[4] == PSP_ICE_VERSION &&
-            audio_packet[5] == PSP_ICE_CHANNEL_AUDIO &&
-            audio_packet[6] == PSP_ICE_MSG_AUDIO_DATA) {
-            unsigned int payload_len =
-                ((unsigned int)audio_packet[12] << 8) | audio_packet[13];
-            if (payload_len == 1024 && received == 14 + payload_len) {
-                ice_audio_queue(audio_packet + 14, payload_len);
-            }
+        /* Drain queued audio datagrams before the 30 Hz input update.
+         * Audio packets arrive about every 5.8 ms, so reading only one
+         * packet per controller tick would lose most of the stream. */
+        {
+            int packets_read = 0;
+            do {
+                received = ice_net_receive(sock, audio_packet,
+                                           sizeof(audio_packet), 0);
+                if (received >= 14 &&
+                    memcmp(audio_packet, PSP_ICE_MAGIC, 4) == 0 &&
+                    audio_packet[4] == PSP_ICE_VERSION &&
+                    audio_packet[5] == PSP_ICE_CHANNEL_AUDIO &&
+                    audio_packet[6] == PSP_ICE_MSG_AUDIO_DATA) {
+                    unsigned int payload_len =
+                        ((unsigned int)audio_packet[12] << 8) | audio_packet[13];
+                    if (payload_len == 1024 && received == 14 + payload_len) {
+                        ice_audio_queue(audio_packet + 14, payload_len);
+                    }
+                }
+                packets_read++;
+            } while (received > 0 && packets_read < 8);
         }
 
         sceCtrlReadBufferPositive(&pad, 1);
