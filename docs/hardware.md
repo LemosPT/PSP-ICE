@@ -6,43 +6,55 @@ Initial target:
 - Sony PSP-2004 (PSP-2000 family)
 - Custom firmware: ARK-4 / ARK-5
 - Native display: 480×272
-- Built-in Wi-Fi used for the local connection to the iPhone Personal Hotspot
-- Physical buttons and analog nub used as the primary controller
+- Built-in Wi-Fi for the local connection to the iPhone Personal Hotspot
+- Physical buttons and analog nub as the primary controller
+- 3.5 mm headphone output used as the audio output to the car
 
-The project targets the existing Wi-Fi compatibility of ARK-4/ARK-5 with iPhone hotspots. This is a project test assumption based on the target setup; connection reliability, hotspot band/security compatibility, throughput, and reconnect behaviour must still be validated on the actual PSP/iPhone pair.
+The PSP must remain in the audio path: it receives digital audio over Wi-Fi, plays it through its own audio hardware, and outputs analog audio through its headphone jack.
 
 ## Phone
 
-Initial phone target: iPhone.
+Initial phone target: iPhone (current development test phone: iPhone 13).
 
-The iPhone runs the PSP-ICE companion app and music playback. It creates/enables Personal Hotspot through iOS settings; the app should guide the user rather than assume it can silently turn the hotspot on.
+The iPhone is intended to run the PSP-ICE companion app, provide the audio source, metadata and controls, and host the local Wi-Fi network through Personal Hotspot. The user enables Personal Hotspot through iOS settings; do not assume the app can silently enable it.
 
-For the selected audio setup, an iPhone without a 3.5 mm headphone jack (including iPhone 13) needs:
-- A compatible Lightning-to-3.5 mm audio adapter
-- A 3.5 mm AUX cable
-- A car stereo with an AUX input
+For the current network test, both the PSP and MacBook joined the iPhone Personal Hotspot. The MacBook ran the Python PCM test sender; the PSP received and played the audio. The iPhone was the access point, not yet the audio sender.
+
+## Audio connection to the car
+
+Required baseline:
+- PSP 3.5 mm headphone output
+- 3.5 mm AUX cable
+- Car stereo with AUX input
 
 Audio path:
+
 ```text
-iPhone → Lightning-to-3.5 mm adapter → AUX cable → car stereo
+iPhone audio source
+       │
+   local Wi-Fi
+       │
+      PSP
+ (audio playback)
+       │
+  3.5 mm output
+       │
+   AUX cable
+       │
+  Car stereo
 ```
 
-The PSP is not in the audio path.
+The PSP's output level should be set carefully. Start tests at low volume and increase gradually. Avoid max-volume testing.
 
-## Car stereo
-
-Baseline requirement:
-- AUX input
-
-Bluetooth audio may be supported as an optional future alternative, but is not required for the first version.
+The iPhone does **not** connect directly to the car AUX input in the selected architecture. The PSP is the audio endpoint and its headphone output feeds the car.
 
 ## Development equipment
 
-A PC/Linux host remains useful for:
-- Building the PSP homebrew client
-- Running the existing gateway/test host
-- Sending test packets and frames
-- Debugging UDP transport and measuring performance
+A PC/Linux host or MacBook remains useful for:
+- Building the PSP homebrew client (the canonical PSPDEV environment is currently Linux).
+- Running the optional gateway and PCM test sender.
+- Sending test packets and frames.
+- Debugging UDP transport and measuring performance.
 
 A PC or Raspberry Pi is not part of the intended end-user installation.
 
@@ -50,6 +62,6 @@ A PC or Raspberry Pi is not part of the intended end-user installation.
 
 - Securely mount the PSP; do not allow it to become a projectile during sudden braking.
 - Keep the display readable without obstructing the driver's view.
-- Route AUX and charging cables safely, away from pedals, steering, airbags, and moving controls.
+- Route AUX, USB/power and other cables safely, away from pedals, steering, airbags and moving controls.
 - Consider PSP power/charging and heat management for longer sessions.
 - Keep the system usable without interacting with the phone while driving. Configure and pair while parked.
