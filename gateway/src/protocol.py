@@ -20,6 +20,7 @@ MSG_PING = 2
 MSG_PONG = 3
 MSG_INPUT_STATE = 10
 MSG_VIDEO_FRAME = 20
+MSG_AUDIO_DATA = 30
 
 # INPUT_STATE payload:
 # buttons: uint16 bitmask, analog_x: uint8, analog_y: uint8
