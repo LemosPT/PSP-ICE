@@ -183,17 +183,34 @@ void ice_net_shutdown(void) {
 }
 
 int ice_net_socket(void) {
-    return sceNetInetSocket(AF_INET, SOCK_DGRAM, 0);
+    int sock;
+    int broadcast = 1;
+
+    sock = sceNetInetSocket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) return sock;
+
+    if (sceNetInetSetsockopt(sock, SOL_SOCKET, SO_BROADCAST,
+                             &broadcast, sizeof(broadcast)) < 0) {
+        sceNetInetClose(sock);
+        return -1;
+    }
+
+    return sock;
 }
 
 int ice_net_send(int sock, const char *host, uint16_t port,
                  const void *data, uint16_t length) {
     struct sockaddr_in addr;
+
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
     addr.sin_addr.s_addr = sceNetInetInetAddr(host);
-    if (addr.sin_addr.s_addr == (uint32_t)-1) return -1;
+
+    if (addr.sin_addr.s_addr == (uint32_t)-1 &&
+        strcmp(host, "255.255.255.255") != 0) {
+        return -1;
+    }
 
     return sceNetInetSendto(sock, data, length, 0,
                             (struct sockaddr *)&addr, sizeof(addr));
