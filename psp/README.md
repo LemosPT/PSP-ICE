@@ -50,7 +50,7 @@ The current test receiver uses a 16-packet queue and a 4-packet prebuffer. These
 The PSP is intentionally part of the audio path:
 
 ```text
-Host/iPhone → Wi-Fi → PSP audio playback → 3.5 mm headphone output → AUX → car stereo
+Android/iPhone → Wi-Fi → PSP audio playback → 3.5 mm headphone output → AUX → car stereo
 ```
 
 The iPhone-originated sender is not implemented yet. For development, use the Python test sender in `gateway/src/audio_sender.py`.
