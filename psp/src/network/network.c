@@ -198,6 +198,17 @@ int ice_net_socket(void) {
     return sock;
 }
 
+int ice_net_bind(int sock, uint16_t port) {
+    struct sockaddr_in addr;
+
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    return sceNetInetBind(sock, (struct sockaddr *)&addr, sizeof(addr));
+}
+
 int ice_net_send(int sock, const char *host, uint16_t port,
                  const void *data, uint16_t length) {
     struct sockaddr_in addr;
