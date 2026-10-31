@@ -1,164 +1,193 @@
 # PSP-ICE Architecture
 
-## High-level design
+## Product direction
 
-PSP-ICE uses the Sony PSP as the in-car display and physical input device, while a Linux gateway handles the heavier networking, CarPlay integration, media processing, and routing.
+PSP-ICE is a phone-powered, music-first infotainment system. A dedicated iPhone companion app renders a CarPlay-inspired/BMW iDrive-inspired interface for the Sony PSP. The PSP acts as the in-car display and physical controller.
 
-```text
-iPhone
-  │
-  │ CarPlay
-  ▼
-Linux CarPlay Gateway
-  │
-  │ PSP-ICE transport over Wi-Fi
-  ▼
-Sony PSP-2004
-  │
-  ├── Display (480×272)
-  ├── Buttons / analog input
-  └── Optional audio → AUX → car stereo
+The intended end-user architecture does **not** require a PC, Raspberry Pi, or Linux gateway in the car. The existing Linux gateway remains useful as an optional development and protocol-testing tool.
 
-Audio can alternatively bypass the PSP:
+PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
 
-iPhone ───── Bluetooth ─────→ Car stereo
-                                  │
-                                  ├── Audio
-                                  ├── Hands-free calls (if supported)
-                                  └── AVRCP / steering-wheel controls (if supported)
-```
-
-The first development target is the PC gateway. A Raspberry Pi or other small Linux computer can become the eventual in-car gateway.
-
-## Components
-
-### Gateway
-
-Responsible for:
-
-- CarPlay connection/integration
-- Video conversion and transport
-- Audio routing and audio-mode management
-- Input handling
-- PSP session management
-- Diagnostics
-- Coordinating phone/car connectivity where required
-
-The gateway should not assume that audio has to pass through the PSP. Audio is an independent subsystem so that different car configurations can be supported.
-
-### PSP client
-
-Responsible for:
-
-- Wi-Fi connection
-- Receiving video frames
-- Displaying the UI at PSP resolution (480×272)
-- Sending buttons/analog input to the gateway
-- Optional local audio output when AUX mode is selected
-- Local volume handling where appropriate
-
-### Transport
-
-The PSP link should be designed for low latency and unreliable Wi-Fi. Video and input are therefore treated separately: stale video data may be dropped, while input events should be delivered reliably and quickly.
-
-## Audio architecture
-
-PSP-ICE supports multiple possible audio paths. The selected mode should be configurable rather than hard-coded into the PSP client.
-
-### AUX mode
-
-In AUX mode, audio is sent to the PSP and then physically connected to the car stereo through the PSP's audio output.
+## High-level architecture
 
 ```text
-iPhone
-  │
-  ▼
-CarPlay Gateway
-  │
-  ├── Video/Input ──→ Wi-Fi ──→ PSP
-  │                              │
-  │                              └── Audio ──→ AUX ──→ Car stereo
-  │
-  └── CarPlay/media processing
+                         iPhone
+              ┌──────────────────────────┐
+              │ PSP-ICE companion app    │
+              │                          │
+              │ • UI renderer (480×272)  │
+              │ • Spotify integration   │
+              │ • Session/discovery     │
+              │ • Input/action mapping  │
+              └────────────┬─────────────┘
+                           │
+                 Local Wi-Fi / UDP
+                 iPhone Personal Hotspot
+                           │
+              ┌────────────▼─────────────┐
+              │ Sony PSP-2004            │
+              │ PSP-ICE homebrew client  │
+              │                          │
+              │ • Receive UI/video       │
+              │ • Display at 480×272     │
+              │ • Send physical input   │
+              └──────────────────────────┘
+
+ iPhone audio output ── Lightning-to-3.5 mm adapter ── AUX ── car stereo
 ```
 
-Advantages:
+The phone and PSP have distinct responsibilities:
+- The phone owns application logic, music-service integration, UI state, rendering, and audio playback.
+- The PSP receives the rendered interface and returns user input.
+- Audio goes directly from the iPhone to the car stereo over AUX. It does not pass through the PSP or the PSP-ICE Wi-Fi stream.
 
-- Works with cars that only provide an AUX input
-- No requirement for Bluetooth audio support in the car
-- Simple and predictable physical audio path
+## 1. iPhone companion app
 
-### Bluetooth car mode
+The companion app is the primary host for the end-user system.
 
-In Bluetooth mode, the phone's audio does not need to be passed through the PSP. The phone connects directly to the car stereo using its normal Bluetooth audio/call connection.
+Responsibilities:
+- Render a dedicated dashboard designed for 480×272 pixels.
+- Manage the PSP session, pairing, connection status, and reconnect attempts.
+- Send UI frames or other suitable display updates to the PSP.
+- Receive PSP button/analog events and map them to interface and media actions.
+- Integrate with Spotify for playback control and now-playing information, subject to the current Spotify SDK/API, account, authentication, and iOS requirements.
+- Keep music playback on the iPhone so the iPhone can output it directly to the car AUX input.
+
+The companion app should not simply mirror the iPhone screen. It owns a purpose-built infotainment interface.
+
+### iOS networking constraints to validate
+
+The user enables Personal Hotspot in iOS settings, then connects the PSP to it. Do not assume an ordinary third-party iOS app can silently enable Personal Hotspot.
+
+The app will need the appropriate iOS local-network permission and must be tested with the PSP as a hotspot client. UDP discovery/broadcast behaviour, hotspot routing, app lifecycle, and reconnect behaviour must be validated on real iPhones. If automatic discovery is unreliable, provide a simple fallback such as manual pairing or entering the PSP address.
+
+## 2. PSP client
+
+Target hardware: Sony PSP-2004 running custom firmware (ARK-4 / ARK-5).
+
+Responsibilities:
+- Join the iPhone Personal Hotspot over Wi-Fi.
+- Discover/pair with the companion app or connect using a fallback address.
+- Receive UI/video data and display it at the PSP's native 480×272 resolution.
+- Send button and analog-stick events to the phone.
+- Show a clear disconnected/reconnecting state.
+- Remain lightweight and responsive.
+
+The project targets the Wi-Fi connectivity available under ARK-4 and ARK-5 with iPhone hotspots. Connection stability and throughput still need to be measured on the actual target PSP and iPhone.
+
+## 3. Wi-Fi transport and protocol
+
+The existing PSP-ICE UDP protocol is the starting point for the direct phone-to-PSP link.
+
+Keep transport responsibilities separated:
+- **Session/control:** hello, pairing, capability negotiation, ping/pong, disconnect, reconnect.
+- **Display:** UI/video frames or display updates from phone to PSP.
+- **Input:** button/analog events from PSP to phone.
+
+The current protocol header and input-state definitions are in `psp/include/protocol.h`. The existing protocol already defines control, video, input, and audio channel identifiers; the selected product architecture does not require an audio channel for the initial AUX setup.
+
+Design for the PSP's legacy Wi-Fi throughput:
+- Never assume modern Wi-Fi bandwidth.
+- Prefer compact updates and avoid sending unchanged screen content unnecessarily.
+- Measure real throughput, latency, packet loss, and frame rate before selecting a codec, resolution strategy, or bitrate.
+- Video frames may be dropped when stale; input and session events need prompt, robust handling.
+- Consider a static/low-motion UI first, since the initial product is music-focused.
+
+## 4. Audio architecture — selected baseline: phone-direct AUX
+
+The selected initial audio route is **Option B: the iPhone is the audio source and connects directly to the car's AUX input**.
 
 ```text
-iPhone
-  │
-  ├── CarPlay → PSP-ICE Gateway → Wi-Fi → PSP
-  │                                      │
-  │                                      └── Display/Input
-  │
-  └── Bluetooth ───────────────────────→ Car stereo
-                                         │
-                                         ├── Music/audio
-                                         ├── Hands-free calls*
-                                         └── AVRCP / steering controls*
+Spotify / music playback on iPhone
+          │
+          ├── Wi-Fi ──→ PSP
+          │             (display and input only)
+          │
+          └── iPhone audio output
+                 │
+                 └── Lightning-to-3.5 mm adapter
+                        │
+                        └── AUX cable → car stereo
 ```
 
-This makes the PSP primarily a display/controller terminal while the car stereo remains responsible for audio playback and, where supported, hands-free calling and Bluetooth media controls.
+For an iPhone 13, a compatible Lightning-to-3.5 mm audio adapter and a 3.5 mm AUX cable are required. The PSP is not used as an audio DAC and does not need to receive or decode audio.
 
-`*` Availability depends on the specific phone and car stereo. PSP-ICE should not assume that every Bluetooth head unit exposes hands-free or steering-wheel functionality.
+Bluetooth audio may be explored later as an optional alternative for cars with Bluetooth audio support, but AUX is the selected baseline and should be the first documented/tested setup.
 
-### Future audio modes
+## 5. UI and interaction design
 
-The architecture should allow additional backends later, for example:
+### Visual direction
 
-- USB audio
-- External USB/Bluetooth DAC
-- Direct gateway audio output
-- Other vehicle-specific audio interfaces
+A purpose-built automotive interface combining:
+- BMW iDrive-inspired layout, dark surfaces, elegant information panels, and restrained visual hierarchy.
+- CarPlay-inspired app tiles and glanceable music controls.
+- PSP-specific layout and physical-button interaction.
 
-## Audio mode selection
+Do not copy proprietary BMW or Apple assets or imply official affiliation.
 
-A future PSP-ICE settings interface should expose an audio output selection such as:
+### Display constraints
 
-```text
-Audio Output
+- Native PSP resolution: 480×272.
+- Design at the target resolution from the beginning.
+- Use large typography, high contrast, simple icons, and generous focus states.
+- Avoid dense layouts and tiny touch targets; the PSP is controlled with physical buttons.
 
-● AUX / PSP
-○ Bluetooth → Car
-○ Automatic
-```
+### Initial screens
 
-`Automatic` may select the appropriate route based on the detected/known car configuration, but explicit selection should always be available.
+**Home dashboard**
+- Music / Spotify
+- Now Playing shortcut
+- Navigation (future/placeholder)
+- Phone (future/placeholder)
+- Podcasts (future/placeholder)
+- Settings / connection
 
-## Input and vehicle controls
+**Now Playing**
+- Album artwork
+- Track title and artist
+- Playback progress
+- Play/pause, previous, next
+- Optional shuffle/repeat state when supported
 
-PSP buttons and analog input are transported from the PSP to the gateway. The gateway can then map these to CarPlay or other media controls.
+**Connection state**
+- Connected/disconnected indicator
+- Hotspot/Wi-Fi status where available
+- Reconnecting message and retry behaviour
 
-Bluetooth car mode introduces a second, independent control path: the car stereo may communicate directly with the phone using Bluetooth media/call profiles. This means steering-wheel buttons can continue to work through the normal car stereo/phone connection without requiring every control event to pass through the PSP.
+### Input mapping
 
-Where the vehicle exposes additional controls that are not handled by Bluetooth, future PSP-ICE hardware or gateway integrations may provide another input path.
+The PSP D-pad and analog stick navigate focus. Cross selects; Circle goes back; Start/Select may be assigned to system shortcuts. L/R can be mapped to previous/next track when appropriate. Final mappings should be configurable and documented.
 
-## Development phases
+## 6. Optional Linux development gateway
 
-1. PC gateway ↔ PC test client
-2. PC gateway ↔ PSP network test
-3. PSP input transport
-4. PSP video receiver
-5. Audio abstraction and AUX mode
-6. Bluetooth audio/car mode investigation
-7. CarPlay integration
-8. Vehicle-control integration
-9. Automotive hardware integration
+The existing `gateway/` code remains valuable for:
+- Testing UDP protocol changes without the iPhone app.
+- Sending test frames and input events.
+- Inspecting packets and measuring performance.
+- Developing the PSP client independently of iOS.
+- Comparing behaviour between a PC host and the eventual iPhone host.
 
-## Design goals
+It is a development tool, not a required component of the intended in-car installation.
 
-- Keep the PSP client lightweight
-- Keep latency low
-- Separate video, input, and audio subsystems
-- Support unreliable Wi-Fi gracefully
-- Avoid requiring audio passthrough through the PSP when the car can handle audio directly
-- Support both AUX-only and Bluetooth-capable vehicles
-- Keep the gateway portable across PC, Raspberry Pi, and other Linux SBC hardware
+## 7. Development phases
+
+1. Keep the existing PC gateway ↔ PSP network prototype working.
+2. Build a static 480×272 dashboard mock-up and validate PSP rendering performance.
+3. Implement PSP button/input transport and robust session handling.
+4. Build the iPhone companion app shell and local-network permissions.
+5. Connect iPhone hotspot ↔ PSP and implement discovery/pairing/reconnect.
+6. Stream the phone-rendered interface to the PSP.
+7. Integrate Spotify playback controls and now-playing metadata within current platform/API limits.
+8. Test iPhone Lightning audio adapter → AUX → car stereo.
+9. Refine automotive UI, mounting, and usability.
+
+## Design principles
+
+- Phone is the host; PSP is the display/controller terminal.
+- No PC is required for normal end-user operation.
+- Dedicated music-first UI, not phone-screen mirroring.
+- AUX audio comes directly from the iPhone.
+- Keep the PSP client lightweight.
+- Separate display, input, session, and audio responsibilities.
+- Be realistic about PSP Wi-Fi bandwidth and iOS background/network restrictions.
+- Keep the Linux gateway as an optional development tool.
