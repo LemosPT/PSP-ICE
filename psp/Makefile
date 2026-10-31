@@ -1,4 +1,3 @@
-
 TARGET = psp-ice
 
 OBJS = \

@@ -9,7 +9,6 @@
 #include "input.h"
 #include "network.h"
 #include "protocol.h"
-#include "gateway.h"
 
 PSP_MODULE_INFO("PSP-ICE", 0, 1, 0);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER | PSP_THREAD_ATTR_VFPU);
