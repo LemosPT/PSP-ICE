@@ -87,16 +87,6 @@ int main(void) {
     pspDebugScreenPrintf("Gateway: %s:%d\n", gateway_host, GATEWAY_PORT);
     pspDebugScreenPrintf("Starting network...\n");
 
-    pspDebugScreenPrintf("PSP-ICE AUDIO TEST\n\n");
-    pspDebugScreenPrintf("Generating 440 Hz tone...\n");
-    pspDebugScreenPrintf("Connect headphones or AUX.\n");
-
-    ret = ice_audio_test_tone();
-
-    pspDebugScreenPrintf("Audio error: 0x%08X\n", (unsigned int)ret);
-    sceKernelSleepThread();
-    return 1;
-
 
     ret = ice_net_init();
     if (ret < 0) {
