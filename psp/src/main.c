@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "audio.h"
 #include "input.h"
 #include "network.h"
 #include "protocol.h"
@@ -36,6 +37,17 @@ static int callback_thread(SceSize args, void *argp) {
 }
 
 static void setup_callbacks(void) {
+    pspDebugScreenInit();
+    pspDebugScreenPrint("PSP-ICE AUDIO TEST\n\n");
+    pspDebugScreenPrint("Generating 440 Hz tone...\n");
+    pspDebugScreenPrint("Connect headphones or AUX.\n")
+
+    ret = ice_audio_test_tone();
+
+    pspDebugScreenPrintf("Audio error: 0x%08X\n", (unsigned int)ret);
+    sceKernelSleepThread();
+    return 1;
+
     SceUID thread;
 
     thread = sceKernelCreateThread("update_thread", callback_thread,
