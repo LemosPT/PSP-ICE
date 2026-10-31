@@ -1,6 +1,7 @@
 #include <pspaudio.h>
 #include <pspkernel.h>
 #include <string.h>
+#include <math.h>
 
 #include "audio.h"
 
