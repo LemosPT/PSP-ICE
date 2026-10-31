@@ -78,6 +78,7 @@ int main(void) {
     int ret;
     uint32_t sequence = 0;
     uint8_t packet[PACKET_SIZE];
+    uint8_t audio_packet[1200];
     uint8_t payload[4];
     SceCtrlData pad;
 
@@ -116,6 +117,22 @@ int main(void) {
         return 1;
     }
 
+    ret = ice_net_bind(sock, GATEWAY_PORT);
+    if (ret < 0) {
+        pspDebugScreenPrintf("UDP bind FAILED: 0x%08X\n", (unsigned int)ret);
+        ice_net_shutdown();
+        sceKernelSleepThread();
+        return 1;
+    }
+
+    ret = ice_audio_init();
+    if (ret < 0) {
+        pspDebugScreenPrintf("Audio init FAILED: 0x%08X\n", (unsigned int)ret);
+        ice_net_shutdown();
+        sceKernelSleepThread();
+        return 1;
+    }
+
     pspDebugScreenPrintf("Sending HELLO...\n");
     ret = send_hello(sock, &sequence);
     if (ret < 0) {
@@ -124,8 +141,8 @@ int main(void) {
         pspDebugScreenPrintf("HELLO sent, seq=%lu\n", (unsigned long)sequence);
     }
 
-    pspDebugScreenPrintf("\nMove the PSP controls.\n");
-    pspDebugScreenPrintf("Gateway should print INPUT packets.\n\n");
+    pspDebugScreenPrintf("\nAudio receiver ready on UDP %d.\n", GATEWAY_PORT);
+    pspDebugScreenPrintf("Move controls; stream PCM to PSP.\n\n");
 
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
@@ -133,6 +150,20 @@ int main(void) {
     while (1) {
         int len;
         uint16_t buttons;
+        int received;
+
+        received = ice_net_receive(sock, audio_packet, sizeof(audio_packet), 1000);
+        if (received >= 14 &&
+            memcmp(audio_packet, PSP_ICE_MAGIC, 4) == 0 &&
+            audio_packet[4] == PSP_ICE_VERSION &&
+            audio_packet[5] == PSP_ICE_CHANNEL_AUDIO &&
+            audio_packet[6] == PSP_ICE_MSG_AUDIO_DATA) {
+            unsigned int payload_len =
+                ((unsigned int)audio_packet[12] << 8) | audio_packet[13];
+            if (payload_len == 1024 && received == 14 + payload_len) {
+                ice_audio_queue(audio_packet + 14, payload_len);
+            }
+        }
 
         sceCtrlReadBufferPositive(&pad, 1);
         buttons = ice_buttons_from_psp(pad.Buttons);
