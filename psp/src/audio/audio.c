@@ -24,6 +24,11 @@ static audio_packet_t queue[AUDIO_QUEUE_SLOTS];
 static unsigned int queue_head;
 static unsigned int queue_tail;
 static unsigned int queue_count;
+static unsigned int packets_received;
+static unsigned int packets_played;
+static unsigned int packets_dropped;
+static unsigned int playback_errors;
+
 static int audio_running;
 
 static int audio_channel = -1;
