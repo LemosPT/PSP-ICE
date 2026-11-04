@@ -110,6 +110,7 @@ Navigation, calls, additional media providers and deeper vehicle integration are
 - [ ] UI/display transport
 - [ ] Pairing, discovery and reconnect state machine
 - [ ] Car installation and mounting
+- [ ] PDF Documentation and User Manual
 
 ## Repository layout
 
