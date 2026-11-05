@@ -10,12 +10,29 @@ The final installation does not require a PC, Raspberry Pi, or Linux gateway. Th
 
 PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
 
+## Current implementation boundary
+
+The architecture below describes the intended product, not a fully completed system.
+
+| Component/path | Current status |
+|---|---|
+| PSP UDP networking and controller-state sender | Implemented prototype |
+| PC/Linux/macOS Python development gateway | Implemented |
+| Python PCM test sender → PSP audio playback | Implemented and hardware-tested |
+| iPhone Personal Hotspot as access point for PSP + MacBook test | Tested |
+| iPhone companion app and iPhone-originated audio sender | Not implemented |
+| Pairing, discovery, session ownership and reconnect | Not implemented as a complete flow |
+| PSP-native infotainment UI and end-to-end display transport | Not implemented |
+| Vehicle installation | Future work |
+
+For reproducible build and test steps, see [Development Setup](development-setup.md). Packet-level status and known discrepancies are in [Protocol](protocol.md).
+
 ## High-level architecture
 
 ```text
                     iPhone
        ┌────────────────────────────────┐
-       │ PSP-ICE companion app          │
+       │ Planned PSP-ICE companion app  │
        │                                │
        │ • App/session logic            │
        │ • Intended audio source        │
@@ -32,9 +49,9 @@ PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certif
        │ PSP-ICE homebrew client        │
        │                                │
        │ • Receive and play PCM audio   │
-       │ • Render 480×272 interface     │
+       │ • Intended 480×272 interface   │
        │ • Read physical controls       │
-       │ • Send input to iPhone         │
+       │ • Send input to host           │
        └───────────────┬────────────────┘
                        │ 3.5 mm headphone output
                        │
@@ -43,16 +60,16 @@ PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certif
                  Car stereo
 ```
 
-The phone and PSP have distinct responsibilities:
+The phone and PSP have distinct intended responsibilities:
 - The iPhone owns application logic, media-service integration, metadata, session management and the upstream audio source.
-- The PSP receives and plays audio, renders the infotainment interface, and returns physical input.
+- The PSP receives and plays audio, is intended to render the infotainment interface, and returns physical input.
 - The car receives sound from the PSP's 3.5 mm output.
 
-## 1. iPhone companion app
+## 1. iPhone companion app (planned)
 
-The companion app is the intended primary host for the end-user system.
+The companion app is the intended primary host for the end-user system. It is not implemented yet.
 
-Responsibilities:
+Planned responsibilities:
 - Manage PSP pairing, connection status and reconnect attempts.
 - Supply audio to the PSP over the local Wi-Fi connection.
 - Provide track metadata, artwork and playback state.
@@ -76,17 +93,20 @@ The app will need appropriate iOS local-network permission. Test hotspot routing
 
 Target hardware: Sony PSP-2000 family (initial test target PSP-2004) running custom firmware.
 
-Responsibilities:
-- Join the iPhone Personal Hotspot over Wi-Fi.
-- Discover/pair with the companion app or connect using a fallback address.
+Current implemented responsibilities:
+- Join a Wi-Fi access point using the PSP network APIs.
+- Bind a UDP socket on port 39000.
+- Send a HELLO packet and controller-state updates to the limited broadcast address `255.255.255.255`.
 - Receive and buffer digital audio packets.
 - Play audio through the PSP audio hardware.
 - Output sound through the PSP's 3.5 mm headphone jack to the car AUX input.
+
+Planned responsibilities:
+- Discover/pair with the companion app or connect using a fallback address.
 - Render the infotainment UI at native 480×272 resolution.
-- Send button and analog-stick events to the phone.
 - Show a clear disconnected/reconnecting state.
 
-The current client has a working UDP audio receive path and a separate controller-input transmit path. Audio and controls have been demonstrated simultaneously.
+The current client has a working UDP audio receive path and a separate controller-input transmit path. Audio and controls have been demonstrated simultaneously. The broadcast destination is a prototype shortcut, not a finished discovery mechanism.
 
 ## 3. Wi-Fi transport and protocol
 
@@ -95,10 +115,10 @@ The existing PSP-ICE UDP protocol is the starting point for the direct phone-to-
 Default development port: `39000/UDP`.
 
 Logical channels:
-- **Session/control:** hello, pairing, capability negotiation, ping/pong, disconnect and reconnect.
-- **Display:** UI/video frames or display updates from phone to PSP.
-- **Input:** button/analog events from PSP to phone.
-- **Audio:** PCM audio packets from phone/host to PSP.
+- **Control:** currently basic HELLO/PING/PONG test messages; pairing, capability negotiation, disconnect and reconnect semantics remain future work.
+- **Display:** intended UI/video frames or display updates from phone to PSP; end-to-end receiver is not implemented.
+- **Input:** button/analog events from PSP to host; current PSP sender exists.
+- **Audio:** PCM audio packets from development host to PSP; current test path exists.
 
 Keep transport responsibilities separate. Input/session handling should remain responsive while audio is being received and played.
 
@@ -107,7 +127,7 @@ Keep transport responsibilities separate. Input/session handling should remain r
 ### Required audio route
 
 ```text
-iPhone audio source / companion app
+iPhone audio source / companion app (planned)
               │
               │ local Wi-Fi / UDP PCM
               ▼
@@ -124,7 +144,7 @@ iPhone audio source / companion app
           Car stereo
 ```
 
-The PSP is not merely a display terminal: it receives and decodes/plays the audio stream. Do not route the phone's audio directly to the car as the baseline architecture.
+The PSP is not merely a display terminal: it receives and plays the audio stream. Do not route the phone's audio directly to the car as the baseline architecture.
 
 ### Current prototype format
 
@@ -152,6 +172,8 @@ This validates the network-to-PSP playback path and the iPhone hotspot network a
 - Use large typography, high contrast, simple icons and clear focus states.
 - Avoid dense layouts and tiny touch targets; the PSP is controlled with physical buttons.
 
+The UI concepts below are design direction only; the complete PSP-native UI and display transport are not implemented.
+
 ### Initial screens
 
 **Home dashboard**
@@ -176,7 +198,7 @@ This validates the network-to-PSP playback path and the iPhone hotspot network a
 
 ### Input mapping
 
-The PSP D-pad and analog stick navigate focus. Cross selects; Circle goes back; Start/Select may be assigned to system shortcuts. L/R can be mapped to previous/next track when appropriate. Final mappings should be configurable and documented.
+The PSP D-pad and analog stick are intended to navigate focus. Cross selects; Circle goes back; Start/Select may be assigned to system shortcuts. L/R can be mapped to previous/next track when appropriate. Final mappings should be configurable and documented.
 
 ## 6. Optional PC/Linux development gateway
 
@@ -191,16 +213,7 @@ It is a development tool, not a required component of the intended in-car instal
 
 ## 7. Development phases
 
-1. Keep the PC gateway ↔ PSP network prototype working.
-2. Harden audio receive/playback with sequence, underrun and overflow diagnostics.
-3. Validate the iPhone Personal Hotspot ↔ PSP connection under realistic conditions.
-4. Build the iPhone companion app shell and local-network permissions.
-5. Implement the iPhone-originated audio sender using a validated audio source.
-6. Specify discovery, pairing, session and reconnect behaviour.
-7. Build the PSP-native 480×272 interface and display transport.
-8. Integrate metadata and media controls within provider/platform limits.
-9. Test PSP 3.5 mm output → AUX → car stereo in the vehicle.
-10. Refine automotive UI, mounting and usability.
+See the [Development Roadmap](roadmap.md) for prioritized work and status.
 
 ## Design principles
 
