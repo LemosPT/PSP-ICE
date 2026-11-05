@@ -4,7 +4,7 @@ This roadmap separates demonstrated prototype work from intended product work. I
 
 ## Current milestone
 
-<badge>Prototype</badge>
+**Early prototype**
 
 The project has demonstrated:
 - PSP UDP networking and controller input sent to a development host.
