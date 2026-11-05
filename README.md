@@ -129,7 +129,7 @@ The PSP-native infotainment UI and end-to-end display transport are not implemen
 
 ## Documentation
 
-Start with the [documentation index](docs/README.md), or go directly to the [development setup guide](docs/development-setup.md).
+Start with the [documentation index](docs/README.md), or go directly to the [development setup guide](docs/development-setup.md) and [development roadmap](docs/roadmap.md). See the [changelog](CHANGELOG.md) for notable milestones.
 
 ## Community
 
