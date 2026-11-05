@@ -1,8 +1,8 @@
 # PSP-ICE
 
 **PSP In-Car Entertainment** — a phone-powered, CarPlay-inspired infotainment system that turns a Sony PSP into an in-car display, physical controller, and **audio playback device**.
-
-PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
+> [!IMPORTANT]
+> PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
 
 ## Core architecture
 
@@ -92,7 +92,8 @@ Design goals:
 7. Music-service integration and now-playing metadata, subject to provider/platform APIs.
 8. Reliable reconnect and clear disconnected states.
 
-Navigation, calls, additional media providers and deeper vehicle integration are later possibilities.
+> [!NOTE]
+> Navigation, calls, additional media providers and deeper vehicle integration are later possibilities.
 
 ## Development status
 
