@@ -1,22 +1,25 @@
 # PSP-ICE Protocol Notes
 
-## Purpose
+## Purpose and status
 
-The PSP-ICE protocol carries the local connection between the intended iPhone companion app (host) and the PSP client. The PC/Linux gateway is a development/test peer; the wire format must remain platform-independent so the iPhone app can implement it.
+The PSP-ICE protocol is the platform-independent UDP wire format intended for communication between the future iPhone companion app (host) and the PSP client. The PC/Linux gateway is currently a development and test peer.
+
+- **Implemented:** v1 packet header, HELLO/PING/PONG test messages, PSP input-state transmission, and PCM audio receive/playback.
+- **Tested:** PC-to-PC protocol round trip and development-host-to-PSP PCM playback, including a test using the iPhone Personal Hotspot as the access point.
+- **Not implemented:** production discovery/pairing, authentication, session ownership, reconnect state machine, iPhone audio sender and end-to-end display transport.
+- **Proposed:** video fragment payload described in [the transport specification](../protocol/specification.md).
 
 Default development port: `39000/UDP`.
 
 ## Existing wire header
 
-Defined in `psp/include/protocol.h` and `gateway/src/protocol.py`:
+The header is defined in `psp/src/main.c` and `gateway/src/protocol.py`; constants are in `psp/include/protocol.h`.
 
-- Magic: `ICE1`
-- Version: 1
+- Magic: ASCII `ICE1`
+- Version: `1`
 - Header size: 14 bytes
 - Fields: magic, version, channel, type, flags, sequence, payload length
 - Multi-byte header numeric fields use network byte order (big endian).
-
-The 14-byte header layout is:
 
 | Field | Size |
 |---|---:|
@@ -28,25 +31,27 @@ The 14-byte header layout is:
 | Sequence | 4 bytes |
 | Payload length | 2 bytes |
 
+The payload length describes only the bytes following the 14-byte header. The Python codec currently accepts payloads up to 60,000 bytes; the PSP client has its own smaller receive/send buffers and validates the audio payload length separately.
+
 ## Channels
 
 | Channel | Value | Direction | Purpose |
 |---|---:|---|---|
-| CONTROL | 0 | Bidirectional | Session and keepalive |
-| VIDEO | 1 | Host → PSP | Display frames |
+| CONTROL | 0 | Bidirectional | Basic endpoint announcement and keepalive |
+| VIDEO | 1 | Host → PSP | Proposed display-frame transport |
 | INPUT | 2 | PSP → host | Buttons and analog state |
 | AUDIO | 3 | Host → PSP | Digital PCM audio |
 
 ## Message identifiers
 
-| Message | Value | Channel | Purpose |
+| Message | Value | Channel | Status |
 |---|---:|---|---|
-| HELLO | 1 | CONTROL | Announce endpoint |
-| PING | 2 | CONTROL | Keepalive |
-| PONG | 3 | CONTROL | Response |
-| INPUT_STATE | 10 | INPUT | Current PSP button/analog state |
-| VIDEO_FRAME | 20 | VIDEO | Video/display fragment |
-| AUDIO_DATA | 30 | AUDIO | PCM audio packet |
+| HELLO | 1 | CONTROL | Implemented for basic endpoint test |
+| PING | 2 | CONTROL | Implemented in Python gateway/client |
+| PONG | 3 | CONTROL | Implemented in Python gateway/client |
+| INPUT_STATE | 10 | INPUT | Implemented by PSP sender and Python decoder |
+| VIDEO_FRAME | 20 | VIDEO | Identifier exists; end-to-end display transport is not implemented |
+| AUDIO_DATA | 30 | AUDIO | Implemented for the PCM test path |
 
 ## Audio data format (implemented prototype)
 
@@ -62,17 +67,17 @@ The current PSP receiver and Python test sender use:
 - 14-byte PSP-ICE header, making a 1,038-byte UDP datagram.
 - Approximately 5.805 ms of audio per packet.
 
-The audio payload is raw PCM only; it does not contain a separate audio-specific header. The outer PSP-ICE sequence number increments once per datagram.
+The audio payload is raw interleaved PCM only; it has no separate audio-specific header. The outer 32-bit sequence number increments once per datagram.
 
-The PSP receiver currently accepts AUDIO_DATA packets only when the payload length is exactly 1,024 bytes. It queues the PCM for a separate audio playback thread. The current queue has 16 packet slots (about 92.9 ms) and begins playback after a 4-packet prebuffer (about 23.2 ms).
+The PSP receiver accepts AUDIO_DATA packets with an exactly 1,024-byte payload and queues the PCM for playback. The current queue has 16 packet slots (about 92.9 ms) and starts playback after a 4-packet prebuffer (about 23.2 ms).
 
-The packet format is implemented in `gateway/src/audio_sender.py` and the receive/playback path is implemented in `psp/src/main.c`, `psp/src/audio/audio.c` and `psp/include/audio.h`.
+The packet format is implemented in `gateway/src/audio_sender.py`; the receive/playback path is implemented in `psp/src/main.c`, `psp/src/audio/audio.c` and `psp/include/audio.h`.
 
-**Prototype limitations:** the PSP currently does not perform sequence-gap/loss accounting for audio, and the queue uses simple shared volatile state that still needs concurrency review. Underrun/overflow counters and robust queue synchronization are future hardening tasks. The 256-frame packet size and current buffering values are tested prototype parameters, not yet a final latency/quality guarantee.
+**Prototype limitations:** the PSP does not yet perform sequence-gap/loss accounting for audio. The queue uses shared volatile state that still needs concurrency review. Underrun/overflow counters and robust queue synchronization are future hardening tasks. Packet size and buffering values are prototype settings, not a final latency or quality guarantee.
 
 ## Input-state payload
 
-The INPUT_STATE payload is exactly 4 bytes:
+INPUT_STATE is exactly 4 bytes:
 
 | Field | Size | Description |
 |---|---:|---|
@@ -80,39 +85,61 @@ The INPUT_STATE payload is exactly 4 bytes:
 | Analog X | 1 byte | Horizontal analog value, 0–255 |
 | Analog Y | 1 byte | Vertical analog value, 0–255 |
 
-The analog stick is normally centered around 128 on each axis. Button bit definitions are maintained in `psp/include/protocol.h` and mirrored in `gateway/src/protocol.py`.
+The analog stick is normally centered around 128 on each axis.
+
+### Current PSP button bit assignments
+
+The PSP C implementation in `psp/include/protocol.h` currently assigns these bits:
+
+| Bit | Button |
+|---:|---|
+| 0 | SELECT |
+| 1 | START |
+| 2 | UP |
+| 3 | RIGHT |
+| 4 | DOWN |
+| 5 | LEFT |
+| 6 | L |
+| 7 | R |
+| 8 | TRIANGLE |
+| 9 | CIRCLE |
+| 10 | CROSS |
+| 11 | SQUARE |
+| 12 | HOME |
+| 13 | HOLD |
+
+### Known Python/PSP mapping mismatch
+
+**Important for companion-app work:** the current constants in `gateway/src/protocol.py` do not match the PSP C bit assignments above. For example, Python currently defines bit 0 as UP and bit 10 as START, while the PSP defines bit 0 as SELECT and bit 1 as START. The payload shape and byte order match, but the meaning of the button bits does not.
+
+This is a source-code discrepancy, not an alternative protocol mode. Do not rely on the Python `BUTTON_*` constants as a correct mirror of the PSP mapping until the implementation is reconciled. The companion app should use one agreed canonical mapping after that correction.
 
 ## Display transport
 
-The UI target is the PSP's native 480×272 display. The companion app is intended to own the UI state and provide display data to the PSP. The exact representation (full frames, dirty rectangles, tiles or another compact update format) remains to be benchmarked on real PSP hardware.
+The UI target is the PSP's native 480×272 display. The companion app is intended to own UI state and provide display data to the PSP. The exact representation (full frames, dirty rectangles, tiles or another compact update format) remains to be benchmarked on real PSP hardware.
 
-The separate detailed video-fragment proposal is documented in `protocol/specification.md`; verify it against the current implementation before treating it as implemented.
+The detailed RGB565 video-fragment design in `protocol/specification.md` is a proposal, not a completed receiver implementation.
 
-## Intended traffic direction
+## Current network behaviour
 
-Host → PSP:
-- Session/control messages
-- UI/video data
-- AUDIO_DATA PCM packets
+- The PSP client binds UDP port 39000.
+- The PSP currently sends HELLO and INPUT_STATE packets to `255.255.255.255:39000` (limited IPv4 broadcast).
+- The Python gateway listens on the configured address (default `0.0.0.0:39000`) and can receive those packets when the local network forwards broadcast traffic.
+- The Python PCM test sender sends AUDIO_DATA directly to a manually supplied PSP IP address.
+- No completed discovery, pairing, capability negotiation, authentication or reconnect state machine exists.
 
-PSP → host:
-- HELLO/session initiation as designed
-- PING/PONG as appropriate
-- Button and analog input state
+Do not assume broadcast behaves identically on every access point or phone hotspot. A manual-address/pairing fallback and a defined connection lifecycle are still required.
 
-Discovery, pairing, capability negotiation and reconnect state machine still need to be specified and implemented.
+## Transport requirements and future work
 
-## Transport requirements
-
-- UDP is the existing prototype transport.
-- Validate iOS local-network permission behaviour and hotspot client routing.
-- Do not assume UDP broadcast discovery works identically on every iOS hotspot configuration; provide a manual-address or pairing fallback if needed.
+- UDP does not guarantee delivery, ordering or retransmission.
 - Keep display updates, input events, session traffic and audio logically separate.
 - Drop stale display frames rather than allowing a backlog to increase latency.
 - Make input/session handling responsive and resilient to packet loss.
 - Add sequence handling, bounds checks and payload validation before trusting received packets.
 - Measure real PSP Wi-Fi throughput and latency before choosing frame encoding, bitrate or refresh rate.
+- Define pairing, session ownership, reconnect behaviour and capability negotiation before companion-app integration.
 
 ## Compatibility
 
-The wire protocol should be implementable in PSP homebrew C and iOS companion app code. Avoid platform-specific structs or native memory layouts on the wire. Serialize fields explicitly and define byte order and lengths.
+The wire protocol must remain implementable in PSP homebrew C and iOS companion-app code. Avoid platform-specific structs or native memory layouts on the wire. Serialize fields explicitly and define byte order and lengths. Changes that alter an existing binary structure or message interpretation should increment the protocol version rather than silently changing v1.
