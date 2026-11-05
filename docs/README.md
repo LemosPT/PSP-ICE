@@ -8,6 +8,8 @@ PSP-ICE documentation is organized by topic:
 | [Hardware](hardware.md) | PSP/phone targets, car audio connection and installation considerations |
 | [Protocol](protocol.md) | Current UDP packet format, channels, payloads and known implementation gaps |
 | [Development setup](development-setup.md) | Prepare a host, run protocol tests, build the PSP client and test audio |
+| [Development roadmap](roadmap.md) | Prioritized implementation phases and outstanding work |
+| [Changelog](../CHANGELOG.md) | Notable project milestones |
 
 ## Project status at a glance
 
