@@ -49,7 +49,8 @@ static int audio_thread_main(SceSize args, void *argp) {
     int running;
     int ready;
     int has_packet;
-
+    int ret;
+    
     (void)args;
     (void)argp;
 
