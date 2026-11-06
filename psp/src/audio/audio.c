@@ -94,6 +94,16 @@ static int audio_thread_main(SceSize args, void *argp) {
         sceAudioOutputPannedBlocking(
             audio_channel, AUDIO_VOLUME, AUDIO_VOLUME, samples
         );
+        
+        if (audio_lock() < 0) {
+            if(ret < 0) {
+                playback_errors++;
+            } else {
+                packets_played++;
+            }
+            
+            audio_unlock();
+        }
     }
 
     return 0;
@@ -106,6 +116,10 @@ int ice_audio_init(void) {
     queue_tail = 0;
     queue_count = 0;
     audio_running = 1;
+    packets_received = 0;
+    packets_played = 0;
+    packets_dropped = 0;
+    playback_errors = 0;
 
     audio_mutex = sceKernelCreateSema(
         "ice_audio_mutex", 0, 1, 1, NULL
@@ -164,6 +178,9 @@ int ice_audio_queue(const void *data, unsigned int length) {
     }
 
     if (queue_count >= AUDIO_QUEUE_SLOTS) {
+        queue_head = (queue_head + 1) % AUDIO_QUEUE_SLOTS;
+        packets_dropped++;
+        
         audio_unlock();
         return -2;
     }
@@ -175,6 +192,20 @@ int ice_audio_queue(const void *data, unsigned int length) {
 
     audio_unlock();
     return 0;
+}
+
+void ice_audio_get_stats(ice_audio_stats_t *stats) {
+    if (!stats) return;
+
+    if (audio_lock() < 0) return;
+
+    stats->packets_received = packets_received;
+    stats->packets_played = packets_played;
+    stats->packets_dropped = packets_dropped;
+    stats->playback_errors = playback_errors;
+    stats->queue_depth = queue_count;
+
+    audio_unlock();
 }
 
 void ice_audio_shutdown(void) {

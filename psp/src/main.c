@@ -81,6 +81,7 @@ int main(void) {
     uint8_t audio_packet[1200];
     uint8_t payload[4];
     SceCtrlData pad;
+    ice_audio_stats_t audio_stats;
 
     setup_callbacks();
     pspDebugScreenInit();
@@ -185,13 +186,19 @@ int main(void) {
         if (len > 0) {
             ice_net_send(sock, gateway_host, GATEWAY_PORT, packet, len);
         }
-
+        
+        ice_audio_get_stats(&audio_stats);
         pspDebugScreenSetXY(0, 8);
         pspDebugScreenPrintf("seq: %lu     \n", (unsigned long)sequence);
         pspDebugScreenPrintf("buttons: 0x%04X\n", buttons);
         pspDebugScreenPrintf("analog:  %3d,%3d\n", pad.Lx, pad.Ly);
         pspDebugScreenPrintf("                       \n");
 
+        pspDebugScreenPrintf("RX:       %u       \n", audio_stats.packets_received);
+        pspDebugScreenPrintf("Played:   %u       \n", audio_stats.packets_played);
+        pspDebugScreenPrintf("Dropped:  %u       \n", audio_stats.packets_dropped);
+        pspDebugScreenPrintf("Errors:   %u       \n", audio_stats.playback_errors);
+        pspDebugScreenPrintf("Queue:    %u       \n", audio_stats.queue_depth);
         sceKernelDelayThread(INPUT_INTERVAL_US);
     }
 
