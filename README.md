@@ -133,4 +133,4 @@ Start with the [documentation index](docs/README.md), or go directly to the [dev
 
 ## Community
 
-[PSP-ICE | Official Community ❄️](https://discord.gg/BaQJ3Zvm2V)
+[PSP-ICE | Official Community ❄️](https://discord.gg/fgsxAYRT6K)
