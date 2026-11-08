@@ -121,4 +121,4 @@ Navigation, calls, additional media providers and deeper vehicle integration are
 - `hardware/` — car-side hardware notes and schematics
 - `companion/` — planned iPhone companion app (not implemented yet)
 
-## [PSP-ICE | Official Community ❄️](https://discord.gg/BaQJ3Zvm2V)
+## [PSP-ICE | Official Community ❄️](https://discord.gg/fgsxAYRT6K)
