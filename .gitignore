@@ -10,3 +10,17 @@ dist/
 *.swp
 .DS_Store
 .vscode/
+
+# Swift compiled executables
+tools/mac-udp/receiver
+tools/mac-udp/sender
+
+# Swift build products
+*.swiftmodule
+*.swiftdoc
+*.swiftsourceinfo
+*.dSYM/
+
+# macOS filesystem noise
+.AppleDouble
+.LSOverride
