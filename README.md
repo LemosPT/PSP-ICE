@@ -1,16 +1,17 @@
-# PSP-ICE
+[![Playstation fonts](https://see.fontimg.com/api/rf5/M3zx/NTIwYWY0MzA3ZTEwNGJkZjkzZTVmNmQ3ZTI1NzIxNGMub3Rm/UFNQLUlDRQ/phatboyslim.png?r=fs&h=130&w=2000&fg=0096FF&bg=FFFFFF&tb=1&s=65)](https://www.fontspace.com/category/playstation)
 
 **PSP In-Car Entertainment** — a phone-powered, CarPlay-inspired infotainment system that turns a Sony PSP into an in-car display, physical controller, and **audio playback device**.
 
-PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
+> [!IMPORTANT]
+> PSP-ICE is CarPlay-inspired; it is not an Apple CarPlay implementation or certification.
 
 ## Core architecture
 
-The PSP is deliberately part of the audio path. The iPhone is the intended end-user host and audio source; it sends digital audio and interface/control data to the PSP over local Wi-Fi. The PSP plays the received audio through its 3.5 mm headphone output, which connects to the car stereo's AUX input.
+The PSP is deliberately part of the audio path. The iPhone is the intended end-user host and audio source; it is planned to send digital audio and interface/control data to the PSP over local Wi-Fi. The PSP plays received audio through its 3.5 mm headphone output, which connects to the car stereo's AUX input.
 
 ```text
-                  iPhone
-       (companion app + audio source)
+                 iPhone
+       (planned companion app + audio source)
                     ⇅
              Local Wi-Fi / UDP
           (audio, UI data, controls)
@@ -26,34 +27,35 @@ The PSP is deliberately part of the audio path. The iPhone is the intended end-u
                Car stereo
 ```
 
-The PC/Linux gateway is an optional development and test tool. It is not required in the final car installation.
+The PC/Linux gateway is an optional development and test tool. It is not required in the intended final car installation.
 
 ## Responsibilities
 
-### iPhone (intended host)
-- Companion app, application logic, pairing, metadata and media controls.
-- Supplies audio to the PSP over the local Wi-Fi link.
-- Renders or provides UI data for the PSP's native 480×272 display.
+### iPhone (intended host; companion app not implemented)
+- Planned companion app, application logic, pairing, metadata and media controls.
+- Intended to supply audio to the PSP over the local Wi-Fi link.
+- Planned UI data for the PSP's native 480×272 display.
 - Receives PSP input and maps it to app/media actions.
 - Spotify is an integration target, but the permitted and technically viable way to obtain audio for forwarding must be established. Spotify App Remote should not be assumed to expose decoded audio.
 
 ### PSP
 - Runs the PSP-ICE homebrew client under custom firmware.
-- Connects to the iPhone's Personal Hotspot.
+- Connects to a local Wi-Fi access point.
 - Receives audio packets and plays PCM through its own audio hardware.
-- Displays the infotainment UI at 480×272.
+- Displays the intended infotainment UI at 480×272 (UI transport/rendering remains future work).
 - Sends physical button/analog input to the host.
 
 ### Car
-- Receives audio from the PSP's 3.5 mm headphone output through AUX.
+- Receives sound from the PSP's 3.5 mm headphone output through AUX.
 
 ## Connectivity
 
 - **Intended end-user link:** iPhone Personal Hotspot ↔ PSP over local Wi-Fi.
 - **Transport prototype:** UDP on port `39000`.
-- **Development setup tested:** iPhone Personal Hotspot with both PSP and MacBook connected; the MacBook ran the test PCM sender and the PSP played the received audio cleanly.
-- The MacBook/Linux gateway is only a temporary audio/test host in development; the iPhone companion app sender is not implemented yet.
-- Discovery, pairing, iOS local-network permissions, reconnect behaviour and hotspot compatibility still need further implementation/testing.
+- **Development setup tested:** iPhone Personal Hotspot with both PSP and MacBook connected; the MacBook ran the test PCM sender and the PSP played the received audio.
+- The MacBook/Linux gateway is a temporary development audio/test host; the iPhone companion app sender is not implemented yet.
+- The current PSP client sends HELLO and input packets to limited broadcast address `255.255.255.255`; the Python PCM sender targets a manually supplied PSP IP.
+- Discovery, pairing, iOS local-network permissions, reconnect behaviour and hotspot compatibility still need implementation/testing.
 
 ## Audio
 
@@ -63,11 +65,11 @@ The current tested transport format is:
 - 44,100 samples/second
 - 256 audio frames per UDP packet
 - 1,024-byte PCM payload plus the 14-byte PSP-ICE header
-- 5.8 ms of audio per packet (approximately)
+- About 5.8 ms of audio per packet
 
-The PSP buffers incoming PCM and plays it using the PSP audio API. Its 3.5 mm output is connected to the car AUX input.
+The PSP buffers incoming PCM and plays it using the PSP audio API. Its 3.5 mm output connects to the car AUX input.
 
-**Verified milestone:** MacBook test sender → iPhone Personal Hotspot → PSP UDP receiver → PSP audio output. Clean playback was confirmed with the PSP close to the router and again over the iPhone hotspot. The iPhone was providing the network in the latter test; it was not yet acting as the audio sender.
+**Verified milestone:** MacBook test sender → iPhone Personal Hotspot → PSP UDP receiver → PSP audio output. Clean playback was confirmed with the PSP close to the router and over the iPhone hotspot. In the hotspot test, the iPhone provided the network; it was not the audio sender.
 
 ## Interface direction
 
@@ -81,6 +83,8 @@ Design goals:
 - Now Playing view with album artwork, track title, artist, progress and controls.
 - Clear connection and playback status.
 
+The PSP-native infotainment UI and end-to-end display transport are not implemented yet.
+
 ## Initial feature scope
 
 1. Reliable iPhone hotspot ↔ PSP local connection.
@@ -92,11 +96,12 @@ Design goals:
 7. Music-service integration and now-playing metadata, subject to provider/platform APIs.
 8. Reliable reconnect and clear disconnected states.
 
-Navigation, calls, additional media providers and deeper vehicle integration are later possibilities.
+> [!NOTE]
+> Navigation, calls, additional media providers and deeper vehicle integration are later possibilities.
 
 ## Development status
 
-**Early prototype — bidirectional controls and networked PSP audio playback demonstrated.**
+**Early prototype — PSP controller input and networked PSP audio playback have been demonstrated using a PC development sender/gateway.**
 
 - [x] PSP ↔ development host UDP networking
 - [x] PSP controller input sent to development host
@@ -110,15 +115,22 @@ Navigation, calls, additional media providers and deeper vehicle integration are
 - [ ] UI/display transport
 - [ ] Pairing, discovery and reconnect state machine
 - [ ] Car installation and mounting
+- [ ] PDF documentation and user manual
 
 ## Repository layout
 
 - `psp/` — PSP homebrew client
-- `gateway/` — optional PC/Linux development and test tools
+- `gateway/` — optional PC/Linux/macOS development and test tools
 - `protocol/` — transport specification
-- `docs/` — architecture, hardware and protocol notes
+- `docs/` — project documentation and developer setup
 - `tools/` — development/testing utilities
-- `hardware/` — car-side hardware notes and schematics
+- `hardware/` — hardware notes and schematics (see documentation)
 - `companion/` — planned iPhone companion app (not implemented yet)
 
-## [PSP-ICE | Official Community ❄️](https://discord.gg/fgsxAYRT6K)
+## Documentation
+
+Start with the [documentation index](docs/README.md), or go directly to the [development setup guide](docs/development-setup.md) and [development roadmap](docs/roadmap.md). See the [changelog](CHANGELOG.md) for notable milestones.
+
+## Community
+
+[PSP-ICE | Official Community ❄️](https://discord.gg/fgsxAYRT6K)
