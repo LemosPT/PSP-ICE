@@ -13,7 +13,7 @@
 #define AUDIO_PACKET_BYTES (AUDIO_FRAMES * AUDIO_BYTES_PER_FRAME)
 #define AUDIO_QUEUE_SLOTS 16
 #define AUDIO_PREBUFFER_PACKETS 4
-#define AUDIO_VOLUME 0x4000
+#define AUDIO_VOLUME 0x8000
 
 
 typedef struct {
@@ -31,7 +31,6 @@ static unsigned int packets_dropped;
 static unsigned int playback_errors;
 
 static int audio_running;
-static unsigned int audio_volume = AUDIO_VOLUME;
 
 static int audio_channel = -1;
 static int audio_mutex = -1;
