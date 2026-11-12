@@ -127,9 +127,9 @@ static void draw_media_strip(void) {
 static void draw_home(int selected) {
     int i;
     int x, y;
-    const int tile_w = 126;
-    const int tile_h = 79;
-    const int gap_x = 9;
+    const int tile_w = 143;
+    const int tile_h = 65;
+    const int gap_x = 8;
     const int gap_y = 8;
 
     draw_status_bar();
