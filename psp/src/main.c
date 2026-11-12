@@ -79,6 +79,7 @@ int main(void) {
     uint32_t sequence = 0;
     uint32_t last_audio_sequence = 0;
     unsigned int audio_packets_lost = 0;
+    unsigned int audio_packets_expected = 0;
     unsigned int audio_duplicates = 0;
     unsigned int audio_out_of_order = 0;
     int audio_sequence_initialized = 0;
@@ -184,6 +185,7 @@ int main(void) {
                         if (!audio_sequence_initialized) {
                             last_audio_sequence = received_sequence;
                             audio_sequence_initialized = 1;
+                            audio_packets_expected = 1;
                         } else {
                             uint32_t sequence_delta =
                                 received_sequence - last_audio_sequence;
@@ -191,6 +193,8 @@ int main(void) {
                             if (sequence_delta == 0) {
                                 audio_duplicates++;
                             } else if (sequence_delta < 0x80000000) {
+                                audio_packets_expected += sequence_delta;
+
                                 if (sequence_delta > 1) {
                                     audio_packets_lost += sequence_delta - 1;
                                 }
@@ -232,6 +236,14 @@ int main(void) {
         pspDebugScreenPrintf("Errors:   %u       \n", audio_stats.playback_errors);
         pspDebugScreenPrintf("Queue:    %u       \n", audio_stats.queue_depth);
         pspDebugScreenPrintf("Lost:     %u       \n", audio_packets_lost);
+        if (audio_packets_expected > 0) {
+            unsigned int loss_tenths =
+                (audio_packets_lost * 1000U) / audio_packets_expected;
+            pspDebugScreenPrintf("Loss:     %u.%u%%    \n",
+                                 loss_tenths / 10, loss_tenths % 10);
+        } else {
+            pspDebugScreenPrintf("Loss:     --        \n");
+        }
         pspDebugScreenPrintf("Dupes:    %u       \n", audio_duplicates);
         pspDebugScreenPrintf("Reorder:  %u       \n", audio_out_of_order);
         sceKernelDelayThread(INPUT_INTERVAL_US);
