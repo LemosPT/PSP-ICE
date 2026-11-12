@@ -76,68 +76,146 @@ static int send_hello(int sock, uint32_t *sequence) {
 }
 
 
+#define UI_COLOR_BG       GU_COLOR(7, 12, 19, 255)
+#define UI_COLOR_PANEL    GU_COLOR(18, 28, 41, 255)
+#define UI_COLOR_PANEL2   GU_COLOR(25, 38, 54, 255)
+#define UI_COLOR_BLUE     GU_COLOR(0, 145, 235, 255)
+#define UI_COLOR_WHITE    GU_COLOR(238, 244, 250, 255)
+#define UI_COLOR_MUTED    GU_COLOR(132, 151, 171, 255)
+#define UI_COLOR_GREEN    GU_COLOR(78, 207, 151, 255)
+
+enum {
+    UI_HOME = 0,
+    UI_MUSIC,
+    UI_PHONE,
+    UI_MAPS,
+    UI_APPS,
+    UI_SETTINGS
+};
+
+static const char *ui_names[] = {
+    "MUSIC", "PHONE", "MAPS", "APPS", "SETTINGS", "CONNECT"
+};
+
+static const char *ui_symbols[] = {
+    "M", "P", "N", "A", "S", "C"
+};
+
+static void draw_status_bar(void) {
+    ice_gfx_rect(0, 0, 480, 27, GU_COLOR(12, 19, 28, 255));
+    ice_gfx_text(13, 10, "PSP-ICE", 1, UI_COLOR_WHITE);
+    ice_gfx_text(365, 10, "WIFI", 1, UI_COLOR_GREEN);
+    ice_gfx_rect(405, 9, 2, 9, UI_COLOR_GREEN);
+    ice_gfx_rect(410, 6, 2, 12, UI_COLOR_GREEN);
+    ice_gfx_rect(415, 3, 2, 15, UI_COLOR_GREEN);
+    ice_gfx_text(431, 10, "BT", 1, UI_COLOR_MUTED);
+    ice_gfx_rect(0, 26, 480, 1, GU_COLOR(35, 50, 66, 255));
+}
+
+static void draw_media_strip(void) {
+    ice_gfx_rect(0, 226, 480, 46, GU_COLOR(13, 21, 31, 255));
+    ice_gfx_rect(0, 226, 480, 1, GU_COLOR(35, 50, 66, 255));
+    ice_gfx_rect(12, 233, 31, 31, GU_COLOR(0, 93, 160, 255));
+    ice_gfx_text(22, 245, "ICE", 1, UI_COLOR_WHITE);
+    ice_gfx_text(53, 237, "NOTHING PLAYING", 1, UI_COLOR_WHITE);
+    ice_gfx_text(53, 252, "CONNECT YOUR IPHONE", 1, UI_COLOR_MUTED);
+    ice_gfx_text(386, 245, "<<", 1, UI_COLOR_MUTED);
+    ice_gfx_text(416, 245, ">", 1, UI_COLOR_WHITE);
+    ice_gfx_text(445, 245, ">>", 1, UI_COLOR_MUTED);
+}
+
+static void draw_home(int selected) {
+    int i;
+    int x, y;
+    const int tile_w = 126;
+    const int tile_h = 79;
+    const int gap_x = 9;
+    const int gap_y = 8;
+
+    draw_status_bar();
+
+    ice_gfx_text(15, 42, "GOOD EVENING", 1, UI_COLOR_MUTED);
+    ice_gfx_text(15, 57, "YOUR APPS", 1, UI_COLOR_WHITE);
+
+    for (i = 0; i < 6; i++) {
+        int col = i % 3;
+        int row = i / 3;
+        x = 15 + col * (tile_w + gap_x);
+        y = 76 + row * (tile_h + gap_y);
+
+        ice_gfx_rect(x, y, tile_w, tile_h,
+                     i == selected ? GU_COLOR(23, 54, 80, 255) : UI_COLOR_PANEL);
+        if (i == selected) {
+            ice_gfx_rect(x, y, tile_w, 3, UI_COLOR_BLUE);
+            ice_gfx_rect(x, y, 3, tile_h, UI_COLOR_BLUE);
+        } else {
+            ice_gfx_rect(x, y, tile_w, 1, GU_COLOR(34, 49, 65, 255));
+        }
+
+        ice_gfx_rect(x + 10, y + 12, 34, 34,
+                     i == selected ? UI_COLOR_BLUE : UI_COLOR_PANEL2);
+        ice_gfx_text(x + 22, y + 24, ui_symbols[i], 1, UI_COLOR_WHITE);
+        ice_gfx_text(x + 53, y + 25, ui_names[i], 1, UI_COLOR_WHITE);
+        ice_gfx_text(x + 53, y + 42, i == 0 ? "AUDIO" :
+                     i == 1 ? "CALLS" :
+                     i == 2 ? "NAVIGATION" :
+                     i == 3 ? "LIBRARY" :
+                     i == 4 ? "PREFERENCES" : "IPHONE LINK",
+                     1, UI_COLOR_MUTED);
+    }
+
+    draw_media_strip();
+}
+
+static void draw_app_page(int page) {
+    const char *name = page > 0 && page <= 6 ? ui_names[page - 1] : "APP";
+    draw_status_bar();
+
+    ice_gfx_rect(14, 43, 452, 172, UI_COLOR_PANEL);
+    ice_gfx_rect(14, 43, 3, 172, UI_COLOR_BLUE);
+    ice_gfx_text(30, 58, name, 2, UI_COLOR_WHITE);
+    ice_gfx_rect(30, 83, 420, 1, GU_COLOR(42, 58, 76, 255));
+
+    if (page == UI_MUSIC) {
+        ice_gfx_rect(39, 100, 78, 78, GU_COLOR(0, 93, 160, 255));
+        ice_gfx_text(65, 132, "ICE", 2, UI_COLOR_WHITE);
+        ice_gfx_text(137, 112, "NOTHING PLAYING", 2, UI_COLOR_WHITE);
+        ice_gfx_text(138, 143, "CONNECT YOUR IPHONE", 1, UI_COLOR_MUTED);
+        ice_gfx_text(138, 170, "PLAYBACK CONTROLS WILL APPEAR HERE", 1, UI_COLOR_MUTED);
+    } else {
+        ice_gfx_text(34, 112, "THIS SECTION IS NOT READY YET", 2, UI_COLOR_WHITE);
+        ice_gfx_text(35, 145, "WE WILL BUILD IT NEXT", 1, UI_COLOR_MUTED);
+    }
+
+    ice_gfx_text(30, 195, "O  BACK TO HOME", 1, UI_COLOR_MUTED);
+    draw_media_strip();
+}
+
 static void draw_dashboard(const ice_audio_stats_t *stats,
                            unsigned int lost, unsigned int expected,
-                           unsigned int duplicates, unsigned int reordered) {
+                           unsigned int duplicates, unsigned int reordered,
+                           int page, int selected) {
     char value[32];
     unsigned int loss_tenths = expected ? (lost * 1000U) / expected : 0;
+    (void)stats;
+    (void)duplicates;
+    (void)reordered;
 
-    ice_gfx_begin();
-
-    /* Header */
-    ice_gfx_rect(0, 0, 480, 36, GU_COLOR(16, 24, 35, 255));
-    ice_gfx_rect(0, 35, 480, 2, GU_COLOR(0, 153, 255, 255));
-    ice_gfx_text(18, 13, "PSP-ICE", 2, GU_COLOR(235, 243, 250, 255));
-    ice_gfx_text(350, 15, "WIFI ONLINE", 1, GU_COLOR(80, 205, 150, 255));
-
-    /* Navigation rail */
-    ice_gfx_rect(14, 50, 105, 207, GU_COLOR(17, 25, 36, 255));
-    ice_gfx_rect(14, 60, 3, 25, GU_COLOR(0, 153, 255, 255));
-    ice_gfx_text(28, 69, "HOME", 1, GU_COLOR(90, 190, 255, 255));
-    ice_gfx_text(28, 112, "MUSIC", 1, GU_COLOR(180, 192, 205, 255));
-    ice_gfx_text(28, 155, "PHONE", 1, GU_COLOR(180, 192, 205, 255));
-    ice_gfx_text(28, 198, "SETTINGS", 1, GU_COLOR(180, 192, 205, 255));
-    ice_gfx_rect(26, 94, 80, 1, GU_COLOR(42, 54, 69, 255));
-    ice_gfx_rect(26, 137, 80, 1, GU_COLOR(42, 54, 69, 255));
-    ice_gfx_rect(26, 180, 80, 1, GU_COLOR(42, 54, 69, 255));
-
-    /* Main now-playing panel */
-    ice_gfx_rect(132, 50, 334, 126, GU_COLOR(17, 25, 36, 255));
-    ice_gfx_text(150, 65, "NOW PLAYING", 1, GU_COLOR(115, 137, 158, 255));
-    ice_gfx_rect(151, 91, 72, 72, GU_COLOR(27, 43, 61, 255));
-    ice_gfx_rect(162, 102, 50, 50, GU_COLOR(0, 105, 180, 255));
-    ice_gfx_text(171, 122, "ICE", 1, GU_COLOR(255, 255, 255, 255));
-    ice_gfx_text(238, 105, "NO TRACK", 2, GU_COLOR(235, 243, 250, 255));
-    ice_gfx_text(239, 133, "WAITING FOR IPHONE", 1,
-                 GU_COLOR(125, 145, 165, 255));
-
-    /* Audio and network cards */
-    ice_gfx_rect(132, 188, 160, 69, GU_COLOR(17, 25, 36, 255));
-    ice_gfx_rect(300, 188, 166, 69, GU_COLOR(17, 25, 36, 255));
-    ice_gfx_text(146, 200, "AUDIO LINK", 1, GU_COLOR(115, 137, 158, 255));
-    ice_gfx_text(314, 200, "PACKET HEALTH", 1, GU_COLOR(115, 137, 158, 255));
-
-    snprintf(value, sizeof(value), "RX %u  PLAY %u",
-             stats->packets_received, stats->packets_played);
-    ice_gfx_text(146, 219, value, 1, GU_COLOR(220, 230, 240, 255));
-
-    if (expected) {
-        snprintf(value, sizeof(value), "LOSS %u.%u%%",
-                 loss_tenths / 10, loss_tenths % 10);
-    } else {
-        snprintf(value, sizeof(value), "LOSS --.-%%");
+    if (page != UI_HOME) {
+        draw_app_page(page);
+        ice_gfx_end();
+        return;
     }
-    ice_gfx_text(314, 219, value, 1,
-                 lost ? GU_COLOR(255, 190, 90, 255)
-                      : GU_COLOR(100, 210, 155, 255));
 
-    snprintf(value, sizeof(value), "DROP %u  ERR %u",
-             stats->packets_dropped, stats->playback_errors);
-    ice_gfx_text(146, 237, value, 1, GU_COLOR(125, 145, 165, 255));
+    draw_home(selected);
 
-    snprintf(value, sizeof(value), "DUP %u  OOO %u",
-             duplicates, reordered);
-    ice_gfx_text(314, 237, value, 1, GU_COLOR(125, 145, 165, 255));
+    /* Small live link-health line, kept subtle like an OEM status readout. */
+    if (expected) {
+        snprintf(value, sizeof(value), "LINK LOSS %u.%u%%",
+                 loss_tenths / 10, loss_tenths % 10);
+        ice_gfx_text(330, 211, value, 1,
+                     lost ? GU_COLOR(255, 190, 90, 255) : UI_COLOR_GREEN);
+    }
 
     ice_gfx_end();
 }
@@ -157,6 +235,9 @@ int main(void) {
     uint8_t payload[4];
     SceCtrlData pad;
     ice_audio_stats_t audio_stats;
+    int ui_page = UI_HOME;
+    int ui_selected = 0;
+    uint32_t previous_buttons = 0;
 
     setup_callbacks();
     pspDebugScreenInit();
@@ -285,6 +366,27 @@ int main(void) {
 
         sceCtrlReadBufferPositive(&pad, 1);
         buttons = ice_buttons_from_psp(pad.Buttons);
+
+        /* Navigate the local CarPlay-style interface with the PSP D-pad. */
+        {
+            uint32_t pressed = pad.Buttons & ~previous_buttons;
+            if (ui_page == UI_HOME) {
+                if (pressed & PSP_CTRL_LEFT) {
+                    if (ui_selected % 3 > 0) ui_selected--;
+                } else if (pressed & PSP_CTRL_RIGHT) {
+                    if (ui_selected % 3 < 2) ui_selected++;
+                } else if (pressed & PSP_CTRL_UP) {
+                    if (ui_selected >= 3) ui_selected -= 3;
+                } else if (pressed & PSP_CTRL_DOWN) {
+                    if (ui_selected < 3) ui_selected += 3;
+                } else if (pressed & PSP_CTRL_CROSS) {
+                    ui_page = ui_selected + 1;
+                }
+            } else if (pressed & PSP_CTRL_CIRCLE) {
+                ui_page = UI_HOME;
+            }
+            previous_buttons = pad.Buttons;
+        }
         ice_input_payload(payload, buttons, pad.Lx, pad.Ly);
 
         len = build_packet(packet, PSP_ICE_CHANNEL_INPUT,
@@ -297,7 +399,7 @@ int main(void) {
         ice_audio_get_stats(&audio_stats);
         draw_dashboard(&audio_stats, audio_packets_lost,
                        audio_packets_expected, audio_duplicates,
-                       audio_out_of_order);
+                       audio_out_of_order, ui_page, ui_selected);
         sceKernelDelayThread(INPUT_INTERVAL_US);
     }
 
