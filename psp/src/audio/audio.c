@@ -91,7 +91,7 @@ static int audio_thread_main(SceSize args, void *argp) {
         }
 
         /* Never hold the queue mutex during blocking audio playback. */
-        sceAudioOutputPannedBlocking(
+        int ret = sceAudioOutputPannedBlocking(
             audio_channel, AUDIO_VOLUME, AUDIO_VOLUME, samples
         );
         
