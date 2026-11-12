@@ -1,6 +1,7 @@
 #include <pspctrl.h>
 #include <pspdebug.h>
 #include <pspdisplay.h>
+#include <pspgu.h>
 #include <pspkernel.h>
 #include <psputility_sysparam.h>
 #include <stdio.h>
