@@ -4,7 +4,8 @@ OBJS = \
 	src/main.o \
 	src/input/input.o \
 	src/network/network.o \
-	src/audio/audio.o
+	src/audio/audio.o \
+	src/graphics/graphics.o
 
 CFLAGS = -O2 -G0 -Wall -Iinclude
 
