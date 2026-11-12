@@ -17,7 +17,7 @@ typedef struct {
 
 static unsigned int __attribute__((aligned(16))) display_list[LIST_SIZE / 4];
 static gfx_vertex_t __attribute__((aligned(16))) rect_vertices[1024];
-static gfx_vertex_t __attribute__((aligned(16))) text_vertices[4096];
+static gfx_vertex_t __attribute__((aligned(16))) text_vertices[16384];
 static unsigned int rect_vertex_count;
 static unsigned int text_vertex_count;
 
