@@ -231,6 +231,9 @@ int main(void) {
         pspDebugScreenPrintf("Dropped:  %u       \n", audio_stats.packets_dropped);
         pspDebugScreenPrintf("Errors:   %u       \n", audio_stats.playback_errors);
         pspDebugScreenPrintf("Queue:    %u       \n", audio_stats.queue_depth);
+        pspDebugScreenPrintf("Lost:     %u       \n", audio_packets_lost);
+        pspDebugScreenPrintf("Dupes:    %u       \n", audio_duplicates);
+        pspDebugScreenPrintf("Reorder:  %u       \n", audio_out_of_order);
         sceKernelDelayThread(INPUT_INTERVAL_US);
     }
 
