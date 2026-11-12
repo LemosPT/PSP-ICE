@@ -180,6 +180,27 @@ int main(void) {
                             ((uint32_t)audio_packet[10] << 8) |
                             (uint32_t)audio_packet[11];
 
+                        /* Track audio packet sequence numbers. */
+                        if (!audio_sequence_initialized) {
+                            last_audio_sequence = received_sequence;
+                            audio_sequence_initialized = 1;
+                        } else {
+                            uint32_t sequence_delta =
+                                received_sequence - last_audio_sequence;
+
+                            if (sequence_delta == 0) {
+                                audio_duplicates++;
+                            } else if (sequence_delta < 0x80000000) {
+                                if (sequence_delta > 1) {
+                                    audio_packets_lost += sequence_delta - 1;
+                                }
+
+                                last_audio_sequence = received_sequence;
+                            } else {
+                                audio_out_of_order++;
+                            }
+                        }
+
                         ice_audio_queue(audio_packet + 14, payload_len);
                     }
                 }
