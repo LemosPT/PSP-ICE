@@ -174,6 +174,12 @@ int main(void) {
                     unsigned int payload_len =
                         ((unsigned int)audio_packet[12] << 8) | audio_packet[13];
                     if (payload_len == 1024 && received == 14 + payload_len) {
+                        uint32_t received_sequence =
+                            ((uint32_t)audio_packet[8] << 24) |
+                            ((uint32_t)audio_packet[9] << 16) |
+                            ((uint32_t)audio_packet[10] << 8) |
+                            (uint32_t)audio_packet[11];
+
                         ice_audio_queue(audio_packet + 14, payload_len);
                     }
                 }
