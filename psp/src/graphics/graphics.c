@@ -16,7 +16,9 @@ typedef struct {
 } gfx_vertex_t;
 
 static unsigned int __attribute__((aligned(16))) display_list[LIST_SIZE / 4];
+static gfx_vertex_t __attribute__((aligned(16))) rect_vertices[1024];
 static gfx_vertex_t __attribute__((aligned(16))) text_vertices[4096];
+static unsigned int rect_vertex_count;
 static unsigned int text_vertex_count;
 
 static const char font_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-:./%";
@@ -44,16 +46,24 @@ static const unsigned char font[41][5] = {
     {0x63,0x13,0x08,0x64,0x63}
 };
 
-static void draw_rect_now(int x, int y, int w, int h, unsigned int color) {
-    gfx_vertex_t vertices[2] __attribute__((aligned(16)));
-    vertices[0].x = (float)x;     vertices[0].y = (float)y;     vertices[0].z = 0.0f;
-    vertices[0].color = color;
-    vertices[1].x = (float)(x+w); vertices[1].y = (float)(y+h); vertices[1].z = 0.0f;
-    vertices[1].color = color;
-    sceKernelDcacheWritebackRange(vertices, sizeof(vertices));
-    sceGuDrawArray(GU_SPRITES,
-        GU_VERTEX_32BITF | GU_COLOR_8888 | GU_TRANSFORM_2D,
-        2, NULL, vertices);
+static void queue_rect(int x, int y, int w, int h, unsigned int color) {
+    gfx_vertex_t *a;
+    gfx_vertex_t *b;
+
+    if (rect_vertex_count + 2 > 1024 || w <= 0 || h <= 0) return;
+
+    a = &rect_vertices[rect_vertex_count++];
+    b = &rect_vertices[rect_vertex_count++];
+
+    a->x = (float)x;
+    a->y = (float)y;
+    a->z = 0.0f;
+    a->color = color;
+
+    b->x = (float)(x + w);
+    b->y = (float)(y + h);
+    b->z = 0.0f;
+    b->color = color;
 }
 
 int ice_gfx_init(void) {
@@ -82,11 +92,12 @@ void ice_gfx_begin(void) {
     sceGuStart(GU_DIRECT, display_list);
     sceGuClearColor(0xFF080D14);
     sceGuClear(GU_COLOR_BUFFER_BIT);
+    rect_vertex_count = 0;
     text_vertex_count = 0;
 }
 
 void ice_gfx_rect(int x, int y, int w, int h, unsigned int color) {
-    draw_rect_now(x, y, w, h, color);
+    queue_rect(x, y, w, h, color);
 }
 
 void ice_gfx_text(int x, int y, const char *text, int scale,
@@ -137,6 +148,14 @@ void ice_gfx_text(int x, int y, const char *text, int scale,
 }
 
 void ice_gfx_end(void) {
+    if (rect_vertex_count > 0) {
+        sceKernelDcacheWritebackRange(rect_vertices,
+                                      rect_vertex_count * sizeof(gfx_vertex_t));
+        sceGuDrawArray(GU_SPRITES,
+            GU_VERTEX_32BITF | GU_COLOR_8888 | GU_TRANSFORM_2D,
+            rect_vertex_count, NULL, rect_vertices);
+    }
+
     if (text_vertex_count > 0) {
         sceKernelDcacheWritebackRange(text_vertices,
                                       text_vertex_count * sizeof(gfx_vertex_t));
