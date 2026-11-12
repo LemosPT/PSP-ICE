@@ -8,6 +8,7 @@
 
 #include "audio.h"
 #include "input.h"
+#include "graphics.h"
 #include "network.h"
 #include "protocol.h"
 
@@ -71,6 +72,73 @@ static int send_hello(int sock, uint32_t *sequence) {
                             ++(*sequence), payload, sizeof(payload) - 1);
     if (len < 0) return len;
     return ice_net_send(sock, gateway_host, GATEWAY_PORT, packet, len);
+}
+
+
+static void draw_dashboard(const ice_audio_stats_t *stats,
+                           unsigned int lost, unsigned int expected,
+                           unsigned int duplicates, unsigned int reordered) {
+    char value[32];
+    unsigned int loss_tenths = expected ? (lost * 1000U) / expected : 0;
+
+    ice_gfx_begin();
+
+    /* Header */
+    ice_gfx_rect(0, 0, 480, 36, GU_COLOR(16, 24, 35, 255));
+    ice_gfx_rect(0, 35, 480, 2, GU_COLOR(0, 153, 255, 255));
+    ice_gfx_text(18, 13, "PSP-ICE", 2, GU_COLOR(235, 243, 250, 255));
+    ice_gfx_text(350, 15, "WIFI ONLINE", 1, GU_COLOR(80, 205, 150, 255));
+
+    /* Navigation rail */
+    ice_gfx_rect(14, 50, 105, 207, GU_COLOR(17, 25, 36, 255));
+    ice_gfx_rect(14, 60, 3, 25, GU_COLOR(0, 153, 255, 255));
+    ice_gfx_text(28, 69, "HOME", 1, GU_COLOR(90, 190, 255, 255));
+    ice_gfx_text(28, 112, "MUSIC", 1, GU_COLOR(180, 192, 205, 255));
+    ice_gfx_text(28, 155, "PHONE", 1, GU_COLOR(180, 192, 205, 255));
+    ice_gfx_text(28, 198, "SETTINGS", 1, GU_COLOR(180, 192, 205, 255));
+    ice_gfx_rect(26, 94, 80, 1, GU_COLOR(42, 54, 69, 255));
+    ice_gfx_rect(26, 137, 80, 1, GU_COLOR(42, 54, 69, 255));
+    ice_gfx_rect(26, 180, 80, 1, GU_COLOR(42, 54, 69, 255));
+
+    /* Main now-playing panel */
+    ice_gfx_rect(132, 50, 334, 126, GU_COLOR(17, 25, 36, 255));
+    ice_gfx_text(150, 65, "NOW PLAYING", 1, GU_COLOR(115, 137, 158, 255));
+    ice_gfx_rect(151, 91, 72, 72, GU_COLOR(27, 43, 61, 255));
+    ice_gfx_rect(162, 102, 50, 50, GU_COLOR(0, 105, 180, 255));
+    ice_gfx_text(171, 122, "ICE", 1, GU_COLOR(255, 255, 255, 255));
+    ice_gfx_text(238, 105, "NO TRACK", 2, GU_COLOR(235, 243, 250, 255));
+    ice_gfx_text(239, 133, "WAITING FOR IPHONE", 1,
+                 GU_COLOR(125, 145, 165, 255));
+
+    /* Audio and network cards */
+    ice_gfx_rect(132, 188, 160, 69, GU_COLOR(17, 25, 36, 255));
+    ice_gfx_rect(300, 188, 166, 69, GU_COLOR(17, 25, 36, 255));
+    ice_gfx_text(146, 200, "AUDIO LINK", 1, GU_COLOR(115, 137, 158, 255));
+    ice_gfx_text(314, 200, "PACKET HEALTH", 1, GU_COLOR(115, 137, 158, 255));
+
+    snprintf(value, sizeof(value), "RX %u  PLAY %u",
+             stats->packets_received, stats->packets_played);
+    ice_gfx_text(146, 219, value, 1, GU_COLOR(220, 230, 240, 255));
+
+    if (expected) {
+        snprintf(value, sizeof(value), "LOSS %u.%u%%",
+                 loss_tenths / 10, loss_tenths % 10);
+    } else {
+        snprintf(value, sizeof(value), "LOSS --.-%%");
+    }
+    ice_gfx_text(314, 219, value, 1,
+                 lost ? GU_COLOR(255, 190, 90, 255)
+                      : GU_COLOR(100, 210, 155, 255));
+
+    snprintf(value, sizeof(value), "DROP %u  ERR %u",
+             stats->packets_dropped, stats->playback_errors);
+    ice_gfx_text(146, 237, value, 1, GU_COLOR(125, 145, 165, 255));
+
+    snprintf(value, sizeof(value), "DUP %u  OOO %u",
+             duplicates, reordered);
+    ice_gfx_text(314, 237, value, 1, GU_COLOR(125, 145, 165, 255));
+
+    ice_gfx_end();
 }
 
 int main(void) {
@@ -151,6 +219,8 @@ int main(void) {
     pspDebugScreenPrintf("\nAudio receiver ready on UDP %d.\n", GATEWAY_PORT);
     pspDebugScreenPrintf("Move controls; stream PCM to PSP.\n\n");
 
+    ice_gfx_init();
+
     sceCtrlSetSamplingCycle(0);
     sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
 
@@ -224,28 +294,9 @@ int main(void) {
         }
         
         ice_audio_get_stats(&audio_stats);
-        pspDebugScreenSetXY(0, 8);
-        pspDebugScreenPrintf("seq: %lu     \n", (unsigned long)sequence);
-        pspDebugScreenPrintf("buttons: 0x%04X\n", buttons);
-        pspDebugScreenPrintf("analog:  %3d,%3d\n", pad.Lx, pad.Ly);
-        pspDebugScreenPrintf("                       \n");
-
-        pspDebugScreenPrintf("RX:       %u       \n", audio_stats.packets_received);
-        pspDebugScreenPrintf("Played:   %u       \n", audio_stats.packets_played);
-        pspDebugScreenPrintf("Dropped:  %u       \n", audio_stats.packets_dropped);
-        pspDebugScreenPrintf("Errors:   %u       \n", audio_stats.playback_errors);
-        pspDebugScreenPrintf("Queue:    %u       \n", audio_stats.queue_depth);
-        pspDebugScreenPrintf("Lost:     %u       \n", audio_packets_lost);
-        if (audio_packets_expected > 0) {
-            unsigned int loss_tenths =
-                (audio_packets_lost * 1000U) / audio_packets_expected;
-            pspDebugScreenPrintf("Loss:     %u.%u%%    \n",
-                                 loss_tenths / 10, loss_tenths % 10);
-        } else {
-            pspDebugScreenPrintf("Loss:     --        \n");
-        }
-        pspDebugScreenPrintf("Dupes:    %u       \n", audio_duplicates);
-        pspDebugScreenPrintf("Reorder:  %u       \n", audio_out_of_order);
+        draw_dashboard(&audio_stats, audio_packets_lost,
+                       audio_packets_expected, audio_duplicates,
+                       audio_out_of_order);
         sceKernelDelayThread(INPUT_INTERVAL_US);
     }
 
