@@ -95,7 +95,7 @@ static int audio_thread_main(SceSize args, void *argp) {
             audio_channel, AUDIO_VOLUME, AUDIO_VOLUME, samples
         );
         
-        if (audio_lock() <= 0) {
+        if (audio_lock() >= 0) {
             if (ret < 0) {
                 playback_errors++;
             } else {
