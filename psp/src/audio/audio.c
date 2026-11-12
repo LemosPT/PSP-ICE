@@ -177,6 +177,8 @@ int ice_audio_queue(const void *data, unsigned int length) {
         return -1;
     }
 
+    packets_received++;
+
     if (queue_count >= AUDIO_QUEUE_SLOTS) {
         queue_tail = (queue_tail + 1) % AUDIO_QUEUE_SLOTS;
         queue_count--;
