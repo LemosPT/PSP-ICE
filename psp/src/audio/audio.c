@@ -178,11 +178,9 @@ int ice_audio_queue(const void *data, unsigned int length) {
     }
 
     if (queue_count >= AUDIO_QUEUE_SLOTS) {
-        queue_head = (queue_head + 1) % AUDIO_QUEUE_SLOTS;
+        queue_tail = (queue_tail + 1) % AUDIO_QUEUE_SLOTS;
+        queue_count--;
         packets_dropped++;
-        
-        audio_unlock();
-        return -2;
     }
 
     memcpy(queue[queue_head].samples, data, AUDIO_PACKET_BYTES);
