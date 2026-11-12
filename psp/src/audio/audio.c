@@ -37,11 +37,15 @@ static SceUID audio_thread = -1;
 
 /* Queue state and packet copies are protected by this mutex. */
 static int audio_lock(void) {
+    if (audio_mutex < 0) return -1;
+
     return sceKernelWaitSema(audio_mutex, 1, NULL);
 }
 
 static void audio_unlock(void) {
-    sceKernelSignalSema(audio_mutex, 1);
+    if (audio_mutex >= 0) {
+        sceKernelSignalSema(audio_mutex, 1);
+    }
 }
 
 static int audio_thread_main(SceSize args, void *argp) {
@@ -196,6 +200,12 @@ int ice_audio_queue(const void *data, unsigned int length) {
 
 void ice_audio_get_stats(ice_audio_stats_t *stats) {
     if (!stats) return;
+
+    stats->packets_received = 0;
+    stats->packets_played = 0;
+    stats->packets_dropped = 0;
+    stats->playback_errors = 0;
+    stats->queue_depth = 0;
 
     if (audio_lock() < 0) return;
 
