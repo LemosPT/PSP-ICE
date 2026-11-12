@@ -77,6 +77,11 @@ int main(void) {
     int sock;
     int ret;
     uint32_t sequence = 0;
+    uint32_t last_audio_sequence = 0;
+    unsigned int audio_packets_lost = 0;
+    unsigned int audio_duplicates = 0;
+    unsigned int audio_out_of_order = 0;
+    int audio_sequence_initialized = 0;
     uint8_t packet[PACKET_SIZE];
     uint8_t audio_packet[1200];
     uint8_t payload[4];
