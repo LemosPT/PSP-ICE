@@ -11,8 +11,11 @@ For a complete setup from a fresh clone—including Python tests, PC-to-PC UDP t
 | `test_protocol.py` | Self-tests the Python v1 packet codec |
 | `test_client.py` | PC-side HELLO/PING/PONG client for the development gateway |
 | `test_stream.py` | Reserved/empty placeholder; no stream test is implemented yet |
+| `test_input.py` | PC-side input-state simulator for exercising input payloads |
 
 The PCM test sender lives in `gateway/src/audio_sender.py`, and the UDP development server is `gateway/src/server.py`.
+
+Experimental Swift utilities under `gateway/src/mac-udp/` exchange plain-text UDP messages on port 5000. They are standalone networking experiments, not PSP-ICE v1 packet peers (which use the 14-byte ICE1 header on port 39000).
 
 ## Run the protocol self-test
 
