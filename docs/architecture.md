@@ -22,7 +22,8 @@ The architecture below describes the intended product, not a fully completed sys
 | iPhone Personal Hotspot as access point for PSP + MacBook test | Tested |
 | iPhone companion app and iPhone-originated audio sender | Not implemented |
 | Pairing, discovery, session ownership and reconnect | Not implemented as a complete flow |
-| PSP-native infotainment UI and end-to-end display transport | Not implemented |
+| Local PSP dashboard scaffold | Implemented in source; local navigation and placeholder pages only |
+| Phone-driven UI data and end-to-end display transport | Not implemented |
 | Vehicle installation | Future work |
 
 For reproducible build and test steps, see [Development Setup](development-setup.md). Packet-level status and known discrepancies are in [Protocol](protocol.md).
