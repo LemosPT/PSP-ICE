@@ -44,7 +44,7 @@ Every message begins with a fixed 14-byte header in network byte order (big endi
 | Sequence | 4 bytes | Transport message sequence number |
 | Payload length | 2 bytes | Number of payload bytes following the header |
 
-Total header size: **14 bytes**. The current maximum protocol payload is 60,000 bytes, although the PSP audio test uses much smaller datagrams.
+Total header size: **14 bytes**. The Python reference codec currently accepts payloads up to 60,000 bytes. This is not a proven end-to-end PSP payload limit: the PSP implementation uses smaller fixed receive/send buffers and validates the current audio datagram size separately.
 
 ## Message types
 
@@ -79,7 +79,7 @@ The current test sender and PSP receiver use this fixed PCM format:
 
 Each AUDIO_DATA message payload is exactly 1,024 bytes. Samples are interleaved left/right signed 16-bit values. There is no additional audio-specific payload header.
 
-The sender increments the outer 32-bit sequence number for each audio datagram. The PSP receiver currently validates the ICE1 header, channel, message type and expected payload length before passing PCM to the audio queue. It does not yet reject duplicate/out-of-order packets or count sequence gaps.
+The sender increments the outer 32-bit sequence number for each audio datagram. The PSP receiver validates the ICE1 header, channel, message type and expected payload length before passing PCM to the audio queue. The main loop tracks sequence gaps, duplicates and out-of-order packets and renders an estimated loss percentage on the local dashboard. These are diagnostics only: duplicate/out-of-order packets are not yet rejected or reordered before queueing.
 
 ### PSP buffering and playback
 
@@ -91,7 +91,7 @@ The current PSP implementation:
 - Waits for 4 packets before starting playback (nominal prebuffer approximately 23.2 ms).
 - Plays 256-frame stereo blocks through the PSP audio API.
 
-These are current prototype settings, not final performance guarantees. The queue uses shared volatile counters and needs a concurrency review. Underrun/overflow statistics, sequence tracking and improved jitter handling are planned hardening work.
+These are current prototype settings, not final performance guarantees. Queue state and packet copies are protected by a PSP kernel semaphore mutex. When full, the queue drops the oldest queued packet and increments a drop counter. The audio module exposes received/played/dropped packet counts, playback errors and queue depth. A dedicated playback-underrun counter and packet reorder/rejection policy remain future work.
 
 ### Verified end-to-end development test
 
@@ -106,6 +106,10 @@ The test was performed with:
 Clean playback was confirmed in this hotspot setup. The iPhone served as the Wi-Fi access point; the MacBook was still the audio sender. This test does not mean the iPhone companion app or iPhone-originated audio sender is already implemented.
 
 The PSP's 3.5 mm headphone output is the intended physical audio connection to the car AUX input.
+
+## Local PSP dashboard status
+
+The PSP source includes a local GU dashboard scaffold with six tiles, D-pad navigation, Cross-to-open and Circle-to-return behaviour. Its app pages are placeholders and the media strip is static. The dashboard does not receive UI data from the phone; end-to-end display transport remains unimplemented. The Wi-Fi/Bluetooth status graphics are decorative, not live telemetry.
 
 ## Video transport
 
