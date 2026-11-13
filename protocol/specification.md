@@ -19,7 +19,7 @@ Default port:
 39000/UDP
 ```
 
-UDP does not guarantee delivery, ordering or retransmission. Higher-level logic must detect missing/obsolete data where necessary. Audio sequence-loss handling and recovery are not yet implemented in the PSP receiver.
+UDP does not guarantee delivery, ordering or retransmission. The PSP currently detects audio sequence gaps, duplicates and out-of-order datagrams for diagnostics, but does not yet discard/reorder them or recover missing audio.
 
 ## Logical channels
 
