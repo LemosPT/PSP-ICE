@@ -88,4 +88,4 @@ The PSP currently sends HELLO and controller-state datagrams to `255.255.255.255
 - If audio crackles, first test both devices close to the access point. If crackling persists, investigate packet loss, audio queue underruns and queue synchronization.
 - If `make` cannot find the compiler, verify `PSPDEV`, `PSPSDK` and `PATH`.
 
-For packet definitions and the current Python/PSP button-bit discrepancy, see [Protocol](../docs/protocol.md).
+For packet definitions and the canonical Python/PSP button-bit mapping, see [Protocol](../docs/protocol.md).
