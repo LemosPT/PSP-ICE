@@ -156,7 +156,7 @@ The PSP is not merely a display terminal: it receives and plays the audio stream
 - Each packet represents approximately 5.8 ms of audio.
 - PSP receiver currently uses a 16-packet queue and a 4-packet prebuffer.
 
-The current queue implementation is a prototype and still needs concurrency, underrun, overflow and sequence-loss diagnostics.
+The audio queue is protected by a PSP kernel semaphore mutex. The audio module exposes received/played/dropped packet counts, playback errors and queue depth. The main loop separately tracks sequence gaps, duplicates and out-of-order datagrams and displays estimated packet loss on the home dashboard. These counters are diagnostic only: duplicates and out-of-order packets are still passed to the audio queue, and a dedicated underrun counter is not implemented. Physical-device stress testing and tuning remain necessary.
 
 ### Verified audio milestone
 
@@ -172,7 +172,7 @@ This validates the network-to-PSP playback path and the iPhone hotspot network a
 - Use large typography, high contrast, simple icons and clear focus states.
 - Avoid dense layouts and tiny touch targets; the PSP is controlled with physical buttons.
 
-The UI concepts below are design direction only; the complete PSP-native UI and display transport are not implemented.
+A local PSP-native GU dashboard scaffold is present in the current source. It draws six selectable tiles and a static media strip, supports D-pad navigation, Cross to open a section and Circle to return home, and displays estimated audio packet loss when sequence data is available. App pages are placeholders; media metadata, playback controls, live Wi-Fi/Bluetooth telemetry and phone-driven display updates are not implemented. This scaffold is source-verified, not independently hardware-validated.
 
 ### Initial screens
 
