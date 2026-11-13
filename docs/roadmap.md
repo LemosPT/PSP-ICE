@@ -4,27 +4,33 @@ This roadmap separates demonstrated prototype work from intended product work. I
 
 ## Current milestone
 
-**Early prototype**
+**Early prototype — local dashboard scaffold and audio diagnostics are implemented in source; end-user phone integration remains future work.**
 
-The project has demonstrated:
+Demonstrated or implemented in the current source:
 - PSP UDP networking and controller input sent to a development host.
-- A Python PC-side gateway and protocol test client.
-- A Python PCM test sender streaming a 440 Hz tone to the PSP.
+- Python PC-side gateway and protocol test client.
+- Python PCM test sender streaming a 440 Hz tone to the PSP.
 - Buffered 44.1 kHz stereo PCM playback through the PSP headphone output.
-- The iPhone Personal Hotspot acting as the access point while a MacBook sends audio to the PSP.
+- iPhone Personal Hotspot used as the access point while a MacBook sends audio to the PSP.
+- Local PSP GU dashboard scaffold with six selectable tiles, D-pad navigation, Cross to open and Circle to return.
+- Audio sequence-gap, duplicate and out-of-order counters in the PSP main loop.
+- Estimated packet-loss percentage rendered on the dashboard.
+- Audio queue mutex protection and received/played/dropped/playback-error/queue-depth statistics exposed by the audio module.
 
-The iPhone is not yet the audio sender. The companion app and end-to-end PSP display UI are not implemented.
+The dashboard is a local UI scaffold, not the completed phone-driven infotainment interface. Its app pages are placeholders; the Wi-Fi/Bluetooth indicators are decorative, and the media strip is static. The dashboard has not been independently verified here on physical PSP hardware.
+
+The iPhone is not yet the audio sender. The companion app and end-to-end PSP display transport are not implemented.
 
 ## Prioritized next phases
 
 ### P0 — Stabilize the existing prototype
 
-- [ ] Reconcile Python and PSP controller button-bit assignments.
-- [ ] Add audio sequence-gap, duplicate and out-of-order diagnostics.
-- [ ] Add audio queue underrun/overflow counters.
-- [ ] Review queue synchronization and shared-state safety.
-- [ ] Test packet loss, jitter and longer playback sessions.
+- [ ] Validate the canonical button-bit mapping with PSP hardware and gateway diagnostics.
+- [ ] Add audio underrun detection and expose useful queue/playback statistics in diagnostics.
+- [ ] Decide whether duplicate/out-of-order packets should be discarded or reordered before queueing.
+- [ ] Test packet loss, jitter and longer playback sessions on physical PSP hardware.
 - [ ] Document repeatable PSP and hotspot test results.
+- [ ] Add automated CI for Python protocol tests.
 
 ### P1 — Make the phone-to-PSP connection viable
 

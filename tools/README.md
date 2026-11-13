@@ -14,6 +14,7 @@ For a complete setup from a fresh clone—including Python tests, PC-to-PC UDP t
 
 The PCM test sender lives in `gateway/src/audio_sender.py`, and the UDP development server is `gateway/src/server.py`.
 
+
 ## Run the protocol self-test
 
 From the repository root:

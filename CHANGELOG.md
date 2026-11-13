@@ -2,6 +2,12 @@
 
 Notable project-level changes. This is a concise milestone log, not an exhaustive list of every commit.
 
+## 2026-11-13
+
+- Aligned Python gateway controller button-bit constants with the PSP C v1 mapping and added regression assertions.
+- Updated protocol, architecture, setup, PSP and roadmap documentation for the local dashboard scaffold and audio diagnostics/queue synchronization.
+- Clarified that sequence counters detect gaps/duplicates/reordering but do not yet filter or reorder packets; documented remaining underrun and hardware-validation work.
+
 ## 2026-11-05
 
 - Clarified in the README that PSP-ICE is CarPlay-inspired and is not an Apple CarPlay implementation or certification.

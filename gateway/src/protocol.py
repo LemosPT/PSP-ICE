@@ -26,19 +26,19 @@ MSG_AUDIO_DATA = 30
 # buttons: uint16 bitmask, analog_x: uint8, analog_y: uint8
 INPUT_STATE = struct.Struct("!HBB")
 
-# PSP button bitmasks. Keep these stable for the PSP implementation.
-BUTTON_UP = 1 << 0
-BUTTON_DOWN = 1 << 1
-BUTTON_LEFT = 1 << 2
+# Canonical v1 button bitmasks. Keep these aligned with psp/include/protocol.h.
+BUTTON_SELECT = 1 << 0
+BUTTON_START = 1 << 1
+BUTTON_UP = 1 << 2
 BUTTON_RIGHT = 1 << 3
-BUTTON_TRIANGLE = 1 << 4
-BUTTON_CIRCLE = 1 << 5
-BUTTON_CROSS = 1 << 6
-BUTTON_SQUARE = 1 << 7
-BUTTON_LTRIGGER = 1 << 8
-BUTTON_RTRIGGER = 1 << 9
-BUTTON_START = 1 << 10
-BUTTON_SELECT = 1 << 11
+BUTTON_DOWN = 1 << 4
+BUTTON_LEFT = 1 << 5
+BUTTON_LTRIGGER = 1 << 6
+BUTTON_RTRIGGER = 1 << 7
+BUTTON_TRIANGLE = 1 << 8
+BUTTON_CIRCLE = 1 << 9
+BUTTON_CROSS = 1 << 10
+BUTTON_SQUARE = 1 << 11
 BUTTON_HOME = 1 << 12
 BUTTON_HOLD = 1 << 13
 

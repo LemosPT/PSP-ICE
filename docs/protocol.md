@@ -31,7 +31,7 @@ The header is defined in `psp/src/main.c` and `gateway/src/protocol.py`; constan
 | Sequence | 4 bytes |
 | Payload length | 2 bytes |
 
-The payload length describes only the bytes following the 14-byte header. The Python codec currently accepts payloads up to 60,000 bytes; the PSP client has its own smaller receive/send buffers and validates the audio payload length separately.
+The payload length describes only the bytes following the 14-byte header. The Python codec currently accepts payloads up to 60,000 bytes; this is a Python codec limit, not a demonstrated end-to-end PSP-ICE payload limit. The PSP audio receive buffer is 1,200 bytes and accepts the current 1,038-byte audio datagram; its outbound control/input buffer is smaller.
 
 ## Channels
 
@@ -73,7 +73,9 @@ The PSP receiver accepts AUDIO_DATA packets with an exactly 1,024-byte payload a
 
 The packet format is implemented in `gateway/src/audio_sender.py`; the receive/playback path is implemented in `psp/src/main.c`, `psp/src/audio/audio.c` and `psp/include/audio.h`.
 
-**Prototype limitations:** the PSP does not yet perform sequence-gap/loss accounting for audio. The queue uses shared volatile state that still needs concurrency review. Underrun/overflow counters and robust queue synchronization are future hardening tasks. Packet size and buffering values are prototype settings, not a final latency or quality guarantee.
+**Current diagnostics:** the PSP main loop tracks sequence gaps, duplicate sequence numbers and out-of-order sequence numbers, and displays an estimated loss percentage on the local dashboard. The audio module exposes received/played/dropped packet counts, playback errors and queue depth. Queue state and packet copies are protected by a PSP kernel semaphore mutex; when full, the queue drops its oldest packet and increments the drop counter.
+
+**Prototype limitations:** sequence diagnostics do not yet reject duplicates or reorder out-of-order packets before queueing. A dedicated playback-underrun counter is not implemented. Packet size and buffering values are prototype settings, not a final latency or quality guarantee.
 
 ## Input-state payload
 
@@ -108,11 +110,28 @@ The PSP C implementation in `psp/include/protocol.h` currently assigns these bit
 | 12 | HOME |
 | 13 | HOLD |
 
-### Known Python/PSP mapping mismatch
+### Canonical v1 button mapping
 
-**Important for companion-app work:** the current constants in `gateway/src/protocol.py` do not match the PSP C bit assignments above. For example, Python currently defines bit 0 as UP and bit 10 as START, while the PSP defines bit 0 as SELECT and bit 1 as START. The payload shape and byte order match, but the meaning of the button bits does not.
+The Python gateway constants have been aligned with the PSP C assignments. The shared v1 mapping is:
 
-This is a source-code discrepancy, not an alternative protocol mode. Do not rely on the Python `BUTTON_*` constants as a correct mirror of the PSP mapping until the implementation is reconciled. The companion app should use one agreed canonical mapping after that correction.
+| Bit | Button |
+|---:|---|
+| 0 | SELECT |
+| 1 | START |
+| 2 | UP |
+| 3 | RIGHT |
+| 4 | DOWN |
+| 5 | LEFT |
+| 6 | L |
+| 7 | R |
+| 8 | TRIANGLE |
+| 9 | CIRCLE |
+| 10 | CROSS |
+| 11 | SQUARE |
+| 12 | HOME |
+| 13 | HOLD |
+
+A Python regression test checks the key shared assignments and diagnostic names. Keep `gateway/src/protocol.py` and `psp/include/protocol.h` synchronized when changing this mapping.
 
 ## Display transport
 

@@ -83,7 +83,7 @@ Design goals:
 - Now Playing view with album artwork, track title, artist, progress and controls.
 - Clear connection and playback status.
 
-The PSP-native infotainment UI and end-to-end display transport are not implemented yet.
+The PSP source now includes a local 480×272 dashboard scaffold with six selectable tiles and D-pad navigation. Its app pages are placeholders, the media strip is static, and Wi-Fi/Bluetooth graphics are not live telemetry. Phone-driven UI data and end-to-end display transport are not implemented yet.
 
 ## Initial feature scope
 

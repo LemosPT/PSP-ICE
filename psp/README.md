@@ -47,7 +47,11 @@ For the complete host setup, PC protocol tests and hardware audio test, see [Dev
 - Queues audio for a separate playback thread.
 - Plays 44.1 kHz, stereo, signed 16-bit PCM through the PSP audio hardware.
 
-The current test receiver uses a 16-packet queue and a 4-packet prebuffer. These values are prototype settings and may change after diagnostics and tuning.
+The current receiver uses a 16-packet queue and a 4-packet prebuffer. Queue access is protected by a PSP kernel semaphore mutex. The audio module exposes packet received/played/dropped counts, playback errors and queue depth. The main loop tracks sequence gaps, duplicates and out-of-order packets and displays estimated loss on the home dashboard. These are diagnostic counters; duplicate/out-of-order packets are not yet filtered or reordered, and a dedicated underrun counter is not implemented.
+
+## Local dashboard scaffold
+
+The current source draws a local 480×272 dashboard with six selectable tiles, D-pad navigation, Cross to open a section and Circle to return home. The Music page and other app pages are placeholders; the media strip is static. Wi-Fi/Bluetooth labels and icons are decorative rather than live radio telemetry. This is not yet the phone-driven infotainment UI, and end-to-end display transport is not implemented.
 
 ## Audio output
 
@@ -84,4 +88,4 @@ The PSP currently sends HELLO and controller-state datagrams to `255.255.255.255
 - If audio crackles, first test both devices close to the access point. If crackling persists, investigate packet loss, audio queue underruns and queue synchronization.
 - If `make` cannot find the compiler, verify `PSPDEV`, `PSPSDK` and `PATH`.
 
-For packet definitions and the current Python/PSP button-bit discrepancy, see [Protocol](../docs/protocol.md).
+For packet definitions and the canonical Python/PSP button-bit mapping, see [Protocol](../docs/protocol.md).

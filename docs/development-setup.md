@@ -176,7 +176,9 @@ Start at low volume and increase gradually. Avoid maximum-volume testing.
 - PSP-side discovery, pairing, session management and reconnect behaviour are not complete.
 - The PSP currently uses broadcast for its outbound control/input packets, while the Python audio sender requires the PSP's IP address.
 - The PSP display/UI streaming path is not a completed end-to-end feature.
-- Audio sequence-loss accounting, underrun/overflow diagnostics and queue synchronization still need hardening.
+- The PSP source tracks audio sequence gaps, duplicates and out-of-order datagrams; the dashboard displays estimated packet loss. These counters do not yet drive packet rejection/reordering, and a dedicated playback-underrun counter is not implemented.
+- The audio queue uses a PSP kernel semaphore mutex. Queue overflow drops the oldest queued packet and increments a drop counter; physical-device stress testing is still needed.
+- The local PSP dashboard is a source-level scaffold with placeholder app pages and a static media strip, not the phone-driven UI/display transport.
 - If audio crackles, first test close to the access point and then investigate packet loss and queue behaviour.
 - If the PSP cannot connect, confirm that the access point supports the PSP's Wi-Fi requirements and that the PSP can obtain an IP address.
 - If the gateway receives no PSP input, check host firewall rules and broadcast behaviour on the local network.
