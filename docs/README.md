@@ -15,7 +15,7 @@ PSP-ICE documentation is organized by topic:
 
 PSP-ICE is an early prototype. The current demonstrated work is the PSP UDP client, controller-state transmission, Python development gateway and PCM test-audio playback through the PSP headphone output.
 
-The iPhone companion app, iPhone-originated audio sender, production pairing/reconnect flow and PSP infotainment UI/display transport are not yet implemented. Read the individual pages for the distinction between implemented behaviour, tested prototype settings and proposals.
+The iPhone companion app, iPhone-originated audio sender, production pairing/reconnect flow and phone-driven display transport are not yet implemented. The PSP source does include a local dashboard scaffold with placeholder pages and basic D-pad navigation, plus audio sequence/queue diagnostics. Read the individual pages for the distinction between implemented behaviour, tested prototype settings and proposals.
 
 ## Documentation conventions
 
